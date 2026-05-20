@@ -1,27 +1,47 @@
 services:
-  reports:
-    build: ./services/report
+  coupon:
+    build:
+      context: ./services/coupon  
+      dockerfile: Dockerfile
+    container_name: coupon_service
     ports:
-      - "8001:8000"
-    env_file:
-      - .env
+      - "8001:8000"  
+    volumes:
+      - ./services/coupon:/app
+    environment:
+      - PORT=8000
+  email:
+    build:
+      context: ./services/email 
+      dockerfile: Dockerfile
+    container_name: email_service
+    ports:
+      - "8002:8000"  
+    volumes:
+      - ./services/email:/app
+    environment:
+      - PORT=8000
+  geolocation:
+    build:
+      context: ./services/geolocation 
+      dockerfile: Dockerfile
+    container_name: geolocation_service
+    ports:
+      - "8003:8000"  
+    volumes:
+      - ./services/geolocation:/app
+    environment:
+      - PORT=8000
+  report:
+    build:
+      context: ./services/report
+      dockerfile: Dockerfile
+    container_name: report_service
+    ports:
+      - "8004:8000"  
+    volumes:
+      - ./services/report:/app
+    environment:
+      - PORT=8000
 
-  geolocations:
-    build: ./services/geolocation
-    ports:
-      - "8002:8000"
-    env_file:
-      - .env
 
-  emails:
-    build: ./services/email
-    ports:
-      - "8003:8000"
-    env_file:
-      - .env
-  coupons:
-    build: ./services/coupon
-    ports:
-      - "8004:8000"
-    env_file:
-      - .env
