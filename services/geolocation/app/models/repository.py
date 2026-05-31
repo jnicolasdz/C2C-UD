@@ -9,7 +9,7 @@ class Repository:
         self.add_location(name="Sede calle 40", \
                                      description="Sede de la Universidad Distrital Francisco José de Caldas", \
                                      address="Cra 7 #40-62, Bogotá, Colombia", \
-                                        latitude=4.648283, longitude=-74.062759)
+                                        latitude=4.628101562385973, longitude=-74.06592693333083)
         self.add_location(name="Sede macarena A",
                                      description="Sede de la Universidad Distrital Francisco José de Caldas", \
                                      address="Cra 3 #N26A-40, Bogotá, Colombia", \
@@ -21,27 +21,27 @@ class Repository:
         self.add_location(name="Sede calle 34",
                                      description="Sede de la Universidad Distrital Francisco José de Caldas", \
                                      address="Cl 34 #13-15, Bogotá, Colombia", \
-                                     latitude=4.622224945654993, longitude=-74.06832485478414)
+                                     latitude=4.621984336272019, longitude=-74.06837850449529)
         self.add_location(name="Sede Tecnologica",
                                      description="Sede de la Universidad Distrital Francisco José de Caldas", \
                                      address="Cl 68d Bis A Sur #49F - 70 Bloque 6, piso 1, Tecnológica, Bogotá", \
-                                     latitude=4.580178800021666, longitude=-74.15763258885795)
+                                     latitude=4.579922365316238, longitude=-74.15757937482532)
         self.add_location(name="Sede Bosa",
                                      description="Sede de la Universidad Distrital Francisco José de Caldas", \
                                      address="Cl 52 Sur #93d-39, Bogotá, Colombia", \
-                                     latitude=4.638823980689703, longitude=-74.18633476692263)
+                                     latitude=4.6384071630332, longitude=-74.1862601018121)
         self.add_location(name="Sede Vivero",
                                      description="Sede de la Universidad Distrital Francisco José de Caldas", \
                                      address="Cra 5 #15-82, Bogotá", \
-                                     latitude=4.597661886496556, longitude=-74.06463098881974)
+                                     latitude=4.597362864708261, longitude=-74.06460621077917)
         self.add_location(name="Sede ASAB",
                                      description="Sede de la Universidad Distrital Francisco José de Caldas",
                                      address="Cra 15 #15-2, Bogotá, Colombia", \
-                                     latitude=4.605336743055908, longitude=-74.0785487087344)
+                                     latitude=4.6048557389443046, longitude=-74.07873154783844)
         self.add_location(name="Sede Paiba",
                                      description="Sede de la Universidad Distrital Francisco José de Caldas",
                                      address="Cl 13 #31-75, Bogotá, Colombia", \
-                                     latitude=4.6159815636016175, longitude=-74.09321982318362)
+                                     latitude=4.615281339898904, longitude=-74.09331682907303)
 
     def create_location(self, name: str, description: str, address: str, \
                         latitude: float, longitude: float) -> location.Location:
