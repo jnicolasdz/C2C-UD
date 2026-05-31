@@ -12,8 +12,8 @@ SAMPLE_LOCATION_DATA = {
     "name": "Sede calle 40",
     "description": "Sede de la Universidad Distrital Francisco José de Caldas",
     "address": "Cra 7 #40-62, Bogotá, Colombia",
-    "latitude": 4.648283,
-    "longitude": -74.062759,
+    "latitude": 4.628101562385973,
+    "longitude": -74.06592693333083,
 }
 
 NEW_LOCATION_DATA = {
@@ -37,8 +37,8 @@ class TestLocationModel:
         loc = self._make_location()
         assert loc.id == 1
         assert loc.name == "Sede calle 40"
-        assert loc.latitude == 4.648283
-        assert loc.longitude == -74.062759
+        assert loc.latitude == 4.628101562385973
+        assert loc.longitude == -74.06592693333083
 
     def test_to_dict_returns_all_fields(self):
         """to_dict() devuelve un diccionario con las seis claves esperadas."""

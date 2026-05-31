@@ -13,8 +13,8 @@ SAMPLE_LOCATION_DATA = {
     "name": "Sede calle 40",
     "description": "Sede de la Universidad Distrital Francisco José de Caldas",
     "address": "Cra 7 #40-62, Bogotá, Colombia",
-    "latitude": 4.648283,
-    "longitude": -74.062759,
+    "latitude": 4.628101562385973,
+    "longitude": -74.06592693333083,
 }
 
 NEW_LOCATION_DATA = {

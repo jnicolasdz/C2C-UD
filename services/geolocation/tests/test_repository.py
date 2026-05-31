@@ -12,8 +12,8 @@ SAMPLE_LOCATION_DATA = {
     "name": "Sede calle 40",
     "description": "Sede de la Universidad Distrital Francisco José de Caldas",
     "address": "Cra 7 #40-62, Bogotá, Colombia",
-    "latitude": 4.648283,
-    "longitude": -74.062759,
+    "latitude": 4.628101562385973,
+    "longitude": -74.06592693333083,
 }
 
 NEW_LOCATION_DATA = {
@@ -72,7 +72,7 @@ class TestRepository:
 
     def test_get_location_by_coordinates_found(self, repo):
         """Recupera una ubicación existente por sus coordenadas exactas."""
-        loc = repo.get_location_by_coordinates(4.648283, -74.062759)
+        loc = repo.get_location_by_coordinates(4.628101562385973, -74.06592693333083)
         assert loc is not None
 
     def test_get_location_by_coordinates_not_found(self, repo):
