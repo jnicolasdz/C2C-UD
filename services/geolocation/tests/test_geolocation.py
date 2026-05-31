@@ -127,3 +127,26 @@ class TestGeolocationService:
         mock_repo.delete_location.return_value = False
         with pytest.raises(ValueError, match="does not exist"):
             service.delete_location(9999)
+
+    # ---  get all locations ---
+
+    def test_get_all_locations_returns_list(self, service, mock_repo):
+        """get_all_locations devuelve una lista de diccionarios cuando existen ubicaciones."""
+        mock_locations = [self._location_mock(), self._location_mock({"id": 2, "name": "Sede 2", "description": "Desc", "address": "Dir 2", "latitude": 4.5, "longitude": -74.0})]
+        mock_repo.get_all_locations.return_value = mock_locations
+        result = service.get_all_locations()
+        assert isinstance(result, list)
+        assert len(result) == 2
+        assert result[0] == SAMPLE_LOCATION_DATA
+
+    def test_get_all_locations_raises_when_empty(self, service, mock_repo):
+        """get_all_locations lanza ValueError cuando no hay ubicaciones disponibles."""
+        mock_repo.get_all_locations.return_value = []
+        with pytest.raises(ValueError, match="No locations available"):
+            service.get_all_locations()
+
+    def test_get_all_locations_raises_when_none(self, service, mock_repo):
+        """get_all_locations lanza ValueError cuando el repositorio devuelve None."""
+        mock_repo.get_all_locations.return_value = None
+        with pytest.raises(ValueError, match="No locations available"):
+            service.get_all_locations()

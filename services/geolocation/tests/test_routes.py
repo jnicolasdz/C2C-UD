@@ -113,3 +113,12 @@ class TestRoutes:
         client.delete("/api/v1/geolocation/2")
         response = client.get("/api/v1/geolocation/id/2")
         assert "error" in response.json()
+
+    # --- GET /geolocation/all_address ---
+
+    def test_get_all_locations_ok(self, client):
+        """Endpoint GET devuelve todas las ubicaciones correctamente."""
+        response = client.get("/api/v1/geolocation/all_address")
+        assert response.status_code == 200
+        assert isinstance(response.json(), list)  # Debe devolver una lista
+        assert len(response.json()) > 0  # Debe haber al menos una ubicación

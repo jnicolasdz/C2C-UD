@@ -115,3 +115,49 @@ class TestRepository:
         """Tras eliminar una ubicación, ya no se puede recuperar por ID."""
         repo.delete_location(1)
         assert repo.get_location_by_id(1) is None
+
+    # --- Obtener todas las ubicaciones ---
+
+    def test_get_all_locations_returns_list(self, repo):
+            """get_all_locations devuelve una lista."""
+            locations = repo.get_all_locations()
+            assert isinstance(locations, list)
+
+    def test_get_all_locations_initial_count(self, repo):
+            """get_all_locations devuelve las 9 ubicaciones iniciales."""
+            locations = repo.get_all_locations()
+            assert len(locations) == 9
+
+    def test_get_all_locations_contains_expected_locations(self, repo):
+            """get_all_locations contiene las ubicaciones esperadas."""
+            locations = repo.get_all_locations()
+            names = [loc.name for loc in locations]
+            assert "Sede calle 40" in names
+            assert "Sede macarena A" in names
+            assert "Sede Paiba" in names
+
+    def test_get_all_locations_after_add(self, repo):
+            """get_all_locations incluye nuevas ubicaciones añadidas."""
+            initial_count = len(repo.get_all_locations())
+            repo.add_location(**NEW_LOCATION_DATA)
+            updated_locations = repo.get_all_locations()
+            assert len(updated_locations) == initial_count + 1
+
+    def test_get_all_locations_after_delete(self, repo):
+            """get_all_locations excluye ubicaciones eliminadas."""
+            initial_count = len(repo.get_all_locations())
+            repo.delete_location(1)
+            updated_locations = repo.get_all_locations()
+            assert len(updated_locations) == initial_count - 1
+
+    def test_get_all_locations_not_empty(self, repo):
+            """get_all_locations nunca devuelve una lista vacía por defecto."""
+            locations = repo.get_all_locations()
+            assert len(locations) > 0
+
+    def test_get_all_locations_all_have_ids(self, repo):
+            """Todas las ubicaciones en get_all_locations tienen ID."""
+            locations = repo.get_all_locations()
+            for loc in locations:
+                assert hasattr(loc, 'id')
+                assert loc.id is not None
