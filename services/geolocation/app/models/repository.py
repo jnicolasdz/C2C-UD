@@ -1,8 +1,47 @@
+"""
+Module for location repository operations
+
+This module defines the Repository class for managing location data,
+including adding, retrieving, and deleting locations.
+
+Author: Juan Nicolás Diaz Salamanca <jndiaz@udistrital.edu.co>
+"""
+
 import app.models.location as location
 
 class Repository:
 
+    """
+    Manage a collection of Location objects.
+    Attributes:
+        __locations (list): A private list to store Location objects.
+        __index (int): A private index to assign unique IDs to locations.
+    Methods:
+        __init__(): Initializes the Repository with predefined locations.
+        create_location(name: str, description: str, address: str, latitude: float, longitude: float) -> location.Location:
+            Creates a new Location object with the provided attributes.
+        add_location(name: str, description: str, address: str, latitude: float, longitude: float) -> None:
+            Adds a new Location object to the repository.
+        get_location_by_id(location_id: int) -> location.Location:
+            Retrieves a Location object by its unique identifier.
+        get_location_by_name(name: str) -> location.Location:
+            Retrieves a Location object by its name.
+        get_location_by_address(address: str) -> location.Location:
+            Retrieves a Location object by its physical address.
+        get_location_by_coordinates(latitude: float, longitude: float) -> location.Location:
+            Retrieves a Location object by its geographic coordinates.
+        get_all_locations() -> list:
+            Returns a list of all Location objects in the repository.
+        delete_location(location_id: int) -> bool:
+            Deletes a Location object from the repository by its unique identifier.
+    """
+
     def __init__(self):
+        """
+        Initializes the Repository with a predefined set of locations.
+
+        Each location is created with a unique ID and stored in the __locations list.
+        """
         self.__locations = []
         self.__index = 0
 
@@ -45,44 +84,114 @@ class Repository:
 
     def create_location(self, name: str, description: str, address: str, \
                         latitude: float, longitude: float) -> location.Location:
+        """
+        Creates a new Location object with the provided attributes.
+        Args:
+            name (str): The name of the location.
+            description (str): A brief description of the location.
+            address (str): The physical address of the location.
+            latitude (float): The latitude coordinate of the location.
+            longitude (float): The longitude coordinate of the location.
+
+        Returns:
+            location.Location: A new Location object with a unique ID and the provided attributes.
+        """
         self.__index +=1
         return location.Location(id=self.__index, name=name, description=description, \
                                  address=address, latitude=latitude, longitude=longitude)
     
     def add_location(self, name: str, description: str, address: str, \
                      latitude: float, longitude: float) -> None:
+        """
+        Adds a new Location object to the repository.
+        Args:
+            name (str): The name of the location.
+            description (str): A brief description of the location.
+            address (str): The physical address of the location.
+            latitude (float): The latitude coordinate of the location.
+            longitude (float): The longitude coordinate of the location.
+
+        Returns:
+            None
+        """
         
         self.__locations.append(self.create_location(name=name, description=description, address=address, \
                                                   latitude=latitude, longitude=longitude))
     
     def get_location_by_id(self, location_id: int) -> location.Location:
+        """
+        Retrieves a Location object by its unique identifier.
+        Args:
+            location_id (int): The unique identifier of the location to retrieve.
+        
+        Returns:
+            location.Location: The Location object with the specified ID, or None if not found.
+        """
         for loc in self.__locations:
             if loc.id == location_id:
                 return loc
         return None
     
     def get_location_by_name(self, name: str) -> location.Location:
+        """
+        Retrieves a Location object by its name.
+        Args:
+            name (str): The name of the location to retrieve.
+
+        Returns:
+            location.Location: The Location object with the specified name, or None if not found.
+        """
         for loc in self.__locations:
             if loc.name == name:
                 return loc
         return None
     
     def get_location_by_address(self, address: str) -> location.Location:
+        """
+        Retrieves a Location object by its physical address.
+        Args:
+            address (str): The physical address of the location to retrieve.
+
+        Returns:
+            location.Location: The Location object with the specified address, or None if not found.
+        """
         for loc in self.__locations:
             if loc.address == address:
                 return loc
         return None
     
     def get_location_by_coordinates(self, latitude: float, longitude: float) -> location.Location:
+        """
+        Retrieves a Location object by its geographic coordinates.
+        Args:
+            latitude (float): The latitude coordinate of the location to retrieve.
+            longitude (float): The longitude coordinate of the location to retrieve.
+        
+        Returns:
+            location.Location: The Location object with the specified coordinates, or None if not found.
+        """
         for loc in self.__locations:
             if loc.latitude == latitude and loc.longitude == longitude:
                 return loc
         return None
     
     def get_all_locations(self) -> list:
+        """
+        Returns a list of all Location objects in the repository.
+
+        Returns:
+            list: A list containing all Location objects currently stored in the repository.
+        """
         return self.__locations
     
     def delete_location(self, location_id: int) -> bool:
+        """Deletes a Location object from the repository by its unique identifier.
+        Args:            
+            location_id (int): The unique identifier of the location to delete.
+            
+        Returns:
+            bool: True if the location was successfully deleted, False if the location was not found.
+        """
         for i, loc in enumerate(self.__locations):
             if loc.id == location_id:
                 del self.__locations[i]
