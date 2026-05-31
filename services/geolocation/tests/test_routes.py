@@ -1,12 +1,10 @@
 import pytest
-from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
 
 import sys
 from pathlib import Path
  
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
 
 SAMPLE_LOCATION_DATA = {
     "id": 1,
