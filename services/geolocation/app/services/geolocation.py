@@ -19,6 +19,11 @@ class GeolocationService:
         if self.repository.get_location_by_address(address=address) is None:
             raise ValueError("Location with the given address does not exist.")
         return self.repository.get_location_by_address(address=address).to_dict()
+
+    def get_all_locations(self):
+        if self.repository.get_all_locations() is None or len(self.repository.get_all_locations()) == 0:
+            raise ValueError("No locations available.")
+        return [loc.to_dict() for loc in self.repository.get_all_locations()]
     
     def create_location(self, name: str, description: str, address: str, latitude: float, longitude: float):
         if self.repository.get_location_by_coordinates(latitude=latitude, longitude=longitude) is not None:

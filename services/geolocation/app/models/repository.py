@@ -79,6 +79,9 @@ class Repository:
                 return loc
         return None
     
+    def get_all_locations(self) -> list:
+        return self.__locations
+    
     def delete_location(self, location_id: int) -> bool:
         for i, loc in enumerate(self.__locations):
             if loc.id == location_id:

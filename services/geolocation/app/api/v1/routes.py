@@ -25,6 +25,13 @@ async def get_location_by_address(address: str):
     except ValueError as e:
         return {"error": str(e)}
 
+@router.get("/geolocation/all_address")
+async def get_all_locations():
+    try:
+        return service.get_all_locations()
+    except ValueError as e:
+        return {"error": str(e)}
+
 @router.post("/geolocation/add/{name}/{description}/{address}/{latitude}/{longitude}")
 async def create_location(name: str, description: str, address: str, latitude: float, longitude: float):
     try:
