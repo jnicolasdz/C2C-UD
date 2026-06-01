@@ -38,10 +38,47 @@ services:
       dockerfile: Dockerfile
     container_name: report_service
     ports:
-      - "8004:8000"  
+      - "8004:8000"
     volumes:
       - ./services/report:/app
+    env_file:
+      - ./services/report/.env
     environment:
       - PORT=8000
+    depends_on:
+      report_db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    restart: unless-stopped
+
+  report_db:
+    image: postgres:16-alpine
+    container_name: report_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: marketplace_reports
+    ports:
+      - "5434:5432"
+    volumes:
+      - reports_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d marketplace_reports"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: report_mailpit
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    restart: unless-stopped
+
+volumes:
+  reports_db_data:
 
 
