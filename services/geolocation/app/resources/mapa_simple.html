@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mapa</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+    }
+
+    .controls {
+      padding: 10px;
+    }
+
+    #map {
+      width: 80%;
+      height: 500px;
+      margin: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="controls">
+    <input
+      type="number"
+      id="locationId"
+      placeholder="Ingrese ID de la sede"
+    />
+
+    <button onclick="buscarUbicacion()">
+      Buscar
+    </button>
+  </div>
+
+  <div id="map"></div>
+
+  <script>
+
+    const map = L.map('map').setView(
+      [4.579879582980126, -74.15765447275686],
+      16
+    );
+
+    L.tileLayer(
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      {
+        attribution:
+          '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      }
+    ).addTo(map);
+
+    let marker = null;
+
+    async function buscarUbicacion() {
+
+      const id = document.getElementById("locationId").value;
+
+      if (!id) {
+        alert("Ingrese un ID");
+        return;
+      }
+
+      try {
+
+        // Cambia esta URL por tu endpoint real
+        const response = await fetch(
+          `http://localhost:8003/api/v1/geolocation/id/${id}`
+        );
+
+        if (!response.ok) {
+          throw new Error("Ubicación no encontrada");
+        }
+
+        const data = await response.json();
+
+        console.log(data);
+
+        /*
+          Ajusta estos nombres según tu JSON real.
+
+          Ejemplo esperado:
+          {
+            "id": 1,
+            "name": "Sede Bosa",
+            "latitude": 4.579879,
+            "longitude": -74.157654
+          }
+        */
+
+        const lat = data.latitude;
+        const lon = data.longitude;
+
+        map.setView([lat, lon], 16);
+
+        if (marker) {
+          map.removeLayer(marker);
+        }
+
+        marker = L.marker([lat, lon])
+          .addTo(map)
+          .bindTooltip(
+            data.name || `Ubicación ${id}`,
+            {
+              permanent: true,
+              direction: "top"
+            }
+          );
+
+      } catch (error) {
+        alert(error.message);
+        console.error(error);
+      }
+    }
+
+  </script>
+
+</body>
+</html>
