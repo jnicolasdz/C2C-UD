@@ -6,6 +6,7 @@ from app.core.config import SMTPSettings, get_smtp_settings
 from app.schemas.email_schema import (
     DiscountAvailableRequest,
     EmailVerificationRequest,
+    GeneralPromotionRequest,
     OtpSendRequest,
     PasswordChangedRequest,
     RegisterConfirmationRequest,
@@ -17,6 +18,7 @@ from app.services.email_service import (
     TemplateMissingError,
     send_discount_available_email,
     send_email_verification_email,
+    send_general_promotion_email,
     send_otp_email,
     send_password_changed_email,
     send_register_confirmation_email,
@@ -259,6 +261,38 @@ def discount_available(
     return {
         "success": True,
         "message": "Correo de descuento enviado.",
+        "correlation_id": x_correlation_id,
+        "data": data,
+    }
+
+
+@router.post("/emails/promotions/general", status_code=status.HTTP_200_OK)
+def general_promotion(
+    payload: GeneralPromotionRequest,
+    settings: SMTPSettings = Depends(_verify_api_key),
+    x_correlation_id: str | None = Header(default=None, alias="X-Correlation-ID"),
+) -> dict[str, object | None]:
+    try:
+        data = send_general_promotion_email(payload, settings=settings)
+    except TemplateMissingError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=_error_response("TPL_001", str(exc), correlation_id=x_correlation_id),
+        ) from exc
+    except SMTPAuthError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=_error_response("SMTP_002", str(exc), correlation_id=x_correlation_id),
+        ) from exc
+    except SMTPDeliveryError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=_error_response("SMTP_001", str(exc), correlation_id=x_correlation_id),
+        ) from exc
+
+    return {
+        "success": True,
+        "message": "Campaña procesada.",
         "correlation_id": x_correlation_id,
         "data": data,
     }
