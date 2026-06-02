@@ -91,6 +91,21 @@ class GeneralPromotionRequest(BaseModel):
     fecha_fin_prom: Annotated[str | None, Field(pattern=r"^\d{4}-\d{2}-\d{2}$")] = None
 
 
+class NewsRecipient(BaseModel):
+    codigo_user: int = Field(ge=1)
+    correo_institu: Annotated[EmailStr, Field(max_length=150)]
+    primer_nomb: Annotated[str, Field(min_length=1, max_length=100)]
+
+
+class NewsRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    recipients: list[NewsRecipient] = Field(min_length=1, max_length=500)
+    titulo_boletin: Annotated[str, Field(min_length=1, max_length=150)]
+    contenido_html: Annotated[str, Field(min_length=1)]
+    fecha_publicacion: Annotated[str | None, Field(pattern=r"^\d{4}-\d{2}-\d{2}$")] = None
+
+
 class WelcomeDiscountRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
