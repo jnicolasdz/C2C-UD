@@ -12,6 +12,7 @@ from app.schemas.email_schema import (
     PasswordChangedRequest,
     RegisterConfirmationRequest,
     ReferralInvitationRequest,
+    ReferralRewardRequest,
     WelcomeDiscountRequest,
 )
 from app.services.email_service import (
@@ -26,6 +27,7 @@ from app.services.email_service import (
     send_otp_email,
     send_password_changed_email,
     send_referral_invitation_email,
+    send_referral_reward_email,
     send_register_confirmation_email,
     send_welcome_discount_email,
 )
@@ -410,6 +412,43 @@ def referral_invitation(
     return {
         "success": True,
         "message": "Invitación de referido enviada.",
+        "correlation_id": x_correlation_id,
+        "data": data,
+    }
+
+
+@router.post("/emails/referrals/reward", status_code=status.HTTP_200_OK)
+def referral_reward(
+    payload: ReferralRewardRequest,
+    settings: SMTPSettings = Depends(_verify_api_key),
+    x_correlation_id: str | None = Header(default=None, alias="X-Correlation-ID"),
+) -> dict[str, object | None]:
+    try:
+        data = send_referral_reward_email(payload, settings=settings)
+    except InstitutionalDomainError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=_error_response("VAL_003", str(exc), correlation_id=x_correlation_id),
+        ) from exc
+    except TemplateMissingError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=_error_response("TPL_001", str(exc), correlation_id=x_correlation_id),
+        ) from exc
+    except SMTPAuthError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=_error_response("SMTP_002", str(exc), correlation_id=x_correlation_id),
+        ) from exc
+    except SMTPDeliveryError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=_error_response("SMTP_001", str(exc), correlation_id=x_correlation_id),
+        ) from exc
+
+    return {
+        "success": True,
+        "message": "Correo de recompensa enviado.",
         "correlation_id": x_correlation_id,
         "data": data,
     }

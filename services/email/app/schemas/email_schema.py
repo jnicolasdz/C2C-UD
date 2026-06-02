@@ -111,3 +111,14 @@ class ReferralInvitationRequest(BaseModel):
     referral_code: Annotated[str, Field(min_length=1, max_length=50, pattern="^[A-Z0-9_-]+$")]
     referral_link: Annotated[str, Field(min_length=1, max_length=500)]
     mensaje_personalizado: Annotated[str | None, Field(max_length=300)] = None
+
+
+class ReferralRewardRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    codigo_user: int = Field(ge=1)
+    correo_institu: Annotated[EmailStr, Field(max_length=150)]
+    primer_nomb: Annotated[str, Field(min_length=1, max_length=100)]
+    referred_user_nombre: Annotated[str, Field(min_length=1, max_length=100)]
+    recompensa_descripcion: Annotated[str, Field(min_length=1, max_length=255)]
+    id_cupon_recompensa: Annotated[int | None, Field(ge=1)] = None

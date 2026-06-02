@@ -63,3 +63,35 @@ def test_send_referral_invitation_email_success(monkeypatch):
     assert body['data']['email_sent_to'] == 'newuser@udistrital.edu.co'
     assert body['data']['referral_code'] == 'REF_C2C_ABC123_XYZ'
     assert 'timestamp' in body['data']
+
+
+def test_send_referral_reward_email_success(monkeypatch):
+    monkeypatch.setenv('SMTP_USERNAME', 'test_user')
+    monkeypatch.setenv('SMTP_PASSWORD', 'test_password')
+    monkeypatch.setenv('SMTP_FROM', 'no-reply@example.com')
+    monkeypatch.setenv('EMAIL_SERVICE_API_KEY', 'test-api-key')
+
+    monkeypatch.setattr('app.services.email_service.SMTP', FakeSMTP)
+
+    client = TestClient(app)
+    response = client.post(
+        '/api/v1/emails/referrals/reward',
+        headers={'X-API-Key': 'test-api-key'},
+        json={
+            'codigo_user': 50,
+            'correo_institu': 'referrer@udistrital.edu.co',
+            'primer_nomb': 'Carlos',
+            'referred_user_nombre': 'Juan',
+            'recompensa_descripcion': 'Cupón de $10 para tu próxima compra',
+            'id_cupon_recompensa': 123,
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body['success'] is True
+    assert body['message'] == 'Correo de recompensa enviado.'
+    assert body['correlation_id'] is None
+    assert body['data']['email_sent_to'] == 'referrer@udistrital.edu.co'
+    assert body['data']['id_cupon_recompensa'] == 123
+    assert 'timestamp' in body['data']

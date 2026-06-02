@@ -20,6 +20,7 @@ from app.schemas.email_schema import (
     PasswordChangedRequest,
     RegisterConfirmationRequest,
     ReferralInvitationRequest,
+    ReferralRewardRequest,
     WelcomeDiscountRequest,
 )
 
@@ -32,6 +33,7 @@ BIRTHDAY_DISCOUNT_TEMPLATE_NAME = "promotions/birthday_discount.html"
 GENERAL_PROMOTION_TEMPLATE_NAME = "promotions/general_promotion.html"
 WELCOME_DISCOUNT_TEMPLATE_NAME = "promotions/welcome_discount.html"
 REFERRAL_INVITATION_TEMPLATE_NAME = "referrals/referral_invitation.html"
+REFERRAL_REWARD_TEMPLATE_NAME = "referrals/referral_reward.html"
 TEMPLATE_ROOT = Path(__file__).resolve().parents[1] / "templates"
 template_environment = Environment(
     loader=FileSystemLoader(str(TEMPLATE_ROOT)),
@@ -225,6 +227,22 @@ def _render_referral_invitation_html(payload: ReferralInvitationRequest) -> str:
         referral_code=payload.referral_code,
         referral_link=payload.referral_link,
         mensaje_personalizado=payload.mensaje_personalizado,
+    )
+
+
+def _render_referral_reward_html(payload: ReferralRewardRequest) -> str:
+    try:
+        template = template_environment.get_template(REFERRAL_REWARD_TEMPLATE_NAME)
+    except TemplateNotFound as exc:
+        raise TemplateMissingError("No se encontró el template de recompensa por referido.") from exc
+
+    return template.render(
+        codigo_user=payload.codigo_user,
+        correo_institu=payload.correo_institu,
+        primer_nomb=payload.primer_nomb,
+        referred_user_nombre=payload.referred_user_nombre,
+        recompensa_descripcion=payload.recompensa_descripcion,
+        id_cupon_recompensa=payload.id_cupon_recompensa,
     )
 
 
@@ -649,6 +667,57 @@ def send_referral_invitation_email(
         'referral_code': payload.referral_code,
         'timestamp': datetime.now(timezone.utc).isoformat(),
     }
+
+
+def send_referral_reward_email(
+    payload: 'ReferralRewardRequest',
+    settings: SMTPSettings | None = None,
+) -> dict[str, str | int]:
+    resolved_settings = settings or SMTPSettings()
+    _validate_institutional_domain(payload, resolved_settings)
+
+    html_body = _render_referral_reward_html(payload)
+    message = MIMEText(html_body, 'html', 'utf-8')
+    message['Subject'] = 'Has recibido tu recompensa por referido'
+    message['From'] = resolved_settings.from_address
+    message['To'] = str(payload.correo_institu)
+
+    smtp_config = build_smtp_config(resolved_settings)
+
+    try:
+        if smtp_config['use_ssl']:
+            with SMTP(smtp_config['host'], smtp_config['port'], timeout=smtp_config['timeout']) as smtp_client:
+                smtp_client.ehlo()
+                _authenticate_with_plain(
+                    smtp_client,
+                    smtp_config['username'],
+                    smtp_config['password'],
+                )
+                smtp_client.send_message(message)
+        else:
+            with SMTP(smtp_config['host'], smtp_config['port'], timeout=smtp_config['timeout']) as smtp_client:
+                smtp_client.ehlo()
+                if smtp_config['use_tls']:
+                    smtp_client.starttls(context=ssl.create_default_context())
+                    smtp_client.ehlo()
+                _authenticate_with_plain(
+                    smtp_client,
+                    smtp_config['username'],
+                    smtp_config['password'],
+                )
+                smtp_client.send_message(message)
+    except SMTPAuthenticationError as exc:
+        raise SMTPAuthError('Error de autenticación SMTP.') from exc
+    except (SMTPRecipientsRefused, SMTPException, OSError) as exc:
+        raise SMTPDeliveryError('No fue posible entregar el correo.') from exc
+
+    result = {
+        'email_sent_to': str(payload.correo_institu),
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+    }
+    if payload.id_cupon_recompensa is not None:
+        result['id_cupon_recompensa'] = payload.id_cupon_recompensa
+    return result
 
 
 def send_general_promotion_email(

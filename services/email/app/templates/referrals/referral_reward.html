@@ -1,0 +1,12 @@
+<html>
+  <body>
+    <h1>¡Felicidades, {{ primer_nomb }}!</h1>
+    <p>Has recibido una recompensa por el referido exitoso de <strong>{{ referred_user_nombre }}</strong>.</p>
+    <p>{{ recompensa_descripcion }}</p>
+    {% if id_cupon_recompensa %}
+      <p><strong>Cupón de recompensa:</strong> {{ id_cupon_recompensa }}</p>
+    {% endif %}
+    <p>Gracias por ayudar a crecer la comunidad C2C.</p>
+    <p>Si tienes alguna duda, contáctanos y estaremos felices de ayudarte.</p>
+  </body>
+</html>
