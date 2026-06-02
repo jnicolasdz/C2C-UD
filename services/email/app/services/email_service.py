@@ -23,6 +23,7 @@ from app.schemas.email_schema import (
     ReferralRewardRequest,
     WelcomeDiscountRequest,
     NewsRequest,
+    NewSellersRequest,
 )
 
 TEMPLATE_NAME = "auth/register_confirmation.html"
@@ -36,6 +37,7 @@ WELCOME_DISCOUNT_TEMPLATE_NAME = "promotions/welcome_discount.html"
 REFERRAL_INVITATION_TEMPLATE_NAME = "referrals/referral_invitation.html"
 REFERRAL_REWARD_TEMPLATE_NAME = "referrals/referral_reward.html"
 NEWS_TEMPLATE_NAME = "newsletters/news.html"
+NEW_SELLERS_TEMPLATE_NAME = "newsletters/new_sellers.html"
 TEMPLATE_ROOT = Path(__file__).resolve().parents[1] / "templates"
 template_environment = Environment(
     loader=FileSystemLoader(str(TEMPLATE_ROOT)),
@@ -277,6 +279,22 @@ def _render_news_html(payload: 'NewsRequest', recipient: object) -> str:
         primer_nomb=recipient.primer_nomb,
         titulo_boletin=payload.titulo_boletin,
         contenido_html=payload.contenido_html,
+        fecha_publicacion=payload.fecha_publicacion,
+    )
+
+
+def _render_new_sellers_html(payload: 'NewSellersRequest', recipient: object) -> str:
+    try:
+        template = template_environment.get_template(NEW_SELLERS_TEMPLATE_NAME)
+    except TemplateNotFound as exc:
+        raise TemplateMissingError("No se encontró el template de nuevos vendedores.") from exc
+
+    return template.render(
+        codigo_user=recipient.codigo_user,
+        correo_institu=recipient.correo_institu,
+        primer_nomb=recipient.primer_nomb,
+        new_sellers=payload.new_sellers,
+        titulo_boletin=payload.titulo_boletin,
         fecha_publicacion=payload.fecha_publicacion,
     )
 
@@ -820,6 +838,59 @@ def send_news_email(
                     html_body = _render_news_html(payload, recipient)
                     message = MIMEText(html_body, 'html', 'utf-8')
                     message['Subject'] = payload.titulo_boletin
+                    message['From'] = resolved_settings.from_address
+                    message['To'] = str(recipient.correo_institu)
+                    smtp_client.send_message(message)
+                    sent_successfully += 1
+                except InstitutionalDomainError:
+                    failed += 1
+    except SMTPAuthenticationError as exc:
+        raise SMTPAuthError('Error de autenticación SMTP.') from exc
+    except (SMTPRecipientsRefused, SMTPException, OSError) as exc:
+        raise SMTPDeliveryError('No fue posible entregar el correo.') from exc
+
+    return {
+        'total_recipients': total_recipients,
+        'sent_successfully': sent_successfully,
+        'failed': failed,
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def send_new_sellers_email(
+    payload: 'NewSellersRequest',
+    settings: SMTPSettings | None = None,
+) -> dict[str, int | str]:
+    resolved_settings = settings or SMTPSettings()
+    smtp_config = build_smtp_config(resolved_settings)
+    total_recipients = len(payload.recipients)
+    sent_successfully = 0
+    failed = 0
+
+    try:
+        if smtp_config['use_ssl']:
+            smtp_client_context = SMTP(smtp_config['host'], smtp_config['port'], timeout=smtp_config['timeout'])
+        else:
+            smtp_client_context = SMTP(smtp_config['host'], smtp_config['port'], timeout=smtp_config['timeout'])
+
+        with smtp_client_context as smtp_client:
+            smtp_client.ehlo()
+            if not smtp_config['use_ssl'] and smtp_config['use_tls']:
+                smtp_client.starttls(context=ssl.create_default_context())
+                smtp_client.ehlo()
+
+            _authenticate_with_plain(
+                smtp_client,
+                smtp_config['username'],
+                smtp_config['password'],
+            )
+
+            for recipient in payload.recipients:
+                try:
+                    _validate_institutional_domain(recipient, resolved_settings)
+                    html_body = _render_new_sellers_html(payload, recipient)
+                    message = MIMEText(html_body, 'html', 'utf-8')
+                    message['Subject'] = payload.titulo_boletin or 'Nuevos vendedores en C2C'
                     message['From'] = resolved_settings.from_address
                     message['To'] = str(recipient.correo_institu)
                     smtp_client.send_message(message)

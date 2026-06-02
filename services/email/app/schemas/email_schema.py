@@ -137,3 +137,20 @@ class ReferralRewardRequest(BaseModel):
     referred_user_nombre: Annotated[str, Field(min_length=1, max_length=100)]
     recompensa_descripcion: Annotated[str, Field(min_length=1, max_length=255)]
     id_cupon_recompensa: Annotated[int | None, Field(ge=1)] = None
+
+
+class NewSeller(BaseModel):
+    codigo_user: int = Field(ge=1)
+    nombre_vendedor: Annotated[str, Field(min_length=1, max_length=200)]
+    calificacion: Annotated[float, Field(ge=0, le=5)]
+    id_categoria: int = Field(ge=1)
+    nombre_categoria: Annotated[str, Field(min_length=1, max_length=100)]
+
+
+class NewSellersRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    recipients: list[NewsRecipient] = Field(min_length=1, max_length=500)
+    new_sellers: list[NewSeller] = Field(min_length=1, max_length=20)
+    titulo_boletin: Annotated[str | None, Field(min_length=1, max_length=150)] = None
+    fecha_publicacion: Annotated[str | None, Field(pattern=r"^\d{4}-\d{2}-\d{2}$")] = None
