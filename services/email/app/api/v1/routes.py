@@ -3,12 +3,13 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 
 from app.core.config import SMTPSettings, get_smtp_settings
-from app.schemas.email_schema import RegisterConfirmationRequest
+from app.schemas.email_schema import EmailVerificationRequest, RegisterConfirmationRequest
 from app.services.email_service import (
     InstitutionalDomainError,
     SMTPAuthError,
     SMTPDeliveryError,
     TemplateMissingError,
+    send_email_verification_email,
     send_register_confirmation_email,
 )
 
@@ -101,6 +102,43 @@ def register_confirmation(
     return {
         "success": True,
         "message": "Correo de confirmación enviado exitosamente.",
+        "correlation_id": x_correlation_id,
+        "data": data,
+    }
+
+
+@router.post("/emails/auth/email-verification", status_code=status.HTTP_200_OK)
+def email_verification(
+    payload: EmailVerificationRequest,
+    settings: SMTPSettings = Depends(_verify_api_key),
+    x_correlation_id: str | None = Header(default=None, alias="X-Correlation-ID"),
+) -> dict[str, object | None]:
+    try:
+        data = send_email_verification_email(payload, settings=settings)
+    except InstitutionalDomainError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=_error_response("VAL_003", str(exc), correlation_id=x_correlation_id),
+        ) from exc
+    except TemplateMissingError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=_error_response("TPL_001", str(exc), correlation_id=x_correlation_id),
+        ) from exc
+    except SMTPAuthError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=_error_response("SMTP_002", str(exc), correlation_id=x_correlation_id),
+        ) from exc
+    except SMTPDeliveryError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=_error_response("SMTP_001", str(exc), correlation_id=x_correlation_id),
+        ) from exc
+
+    return {
+        "success": True,
+        "message": "Correo de verificación enviado exitosamente.",
         "correlation_id": x_correlation_id,
         "data": data,
     }
