@@ -20,6 +20,7 @@ from app.schemas.email_schema import (
     OtpSendRequest,
     PasswordChangedRequest,
     ProductRejectedRequest,
+    PoliciesUpdatedRequest,
     RegisterConfirmationRequest,
     ReferralInvitationRequest,
     ReferralRewardRequest,
@@ -38,6 +39,7 @@ GENERAL_PROMOTION_TEMPLATE_NAME = "promotions/general_promotion.html"
 WELCOME_DISCOUNT_TEMPLATE_NAME = "promotions/welcome_discount.html"
 ACCOUNT_SUSPENDED_TEMPLATE_NAME = "moderation/account_suspended.html"
 PRODUCT_REJECTED_TEMPLATE_NAME = "moderation/product_rejected.html"
+POLICIES_UPDATED_TEMPLATE_NAME = "moderation/policies_updated.html"
 REFERRAL_INVITATION_TEMPLATE_NAME = "referrals/referral_invitation.html"
 REFERRAL_REWARD_TEMPLATE_NAME = "referrals/referral_reward.html"
 NEWS_TEMPLATE_NAME = "newsletters/news.html"
@@ -286,6 +288,26 @@ def _render_product_rejected_html(payload: ProductRejectedRequest) -> str:
         motivo_rechazo=payload.motivo_rechazo,
         numero_contrato=payload.numero_contrato,
         recomendaciones=payload.recomendaciones,
+    )
+
+
+def _render_policies_updated_html(payload: PoliciesUpdatedRequest, recipient: object) -> str:
+    try:
+        template = template_environment.get_template(POLICIES_UPDATED_TEMPLATE_NAME)
+    except TemplateNotFound as exc:
+        raise TemplateMissingError("No se encontró el template de políticas actualizadas.") from exc
+
+    return template.render(
+        codigo_user=recipient.codigo_user,
+        correo_institu=recipient.correo_institu,
+        primer_nomb=recipient.primer_nomb,
+        id_doc=payload.id_doc,
+        tipo_doc=payload.tipo_doc,
+        version_nueva=payload.version_nueva,
+        resumen_cambios=payload.resumen_cambios,
+        numero_contrato=payload.numero_contrato,
+        enlace_documento=payload.enlace_documento,
+        fecha_vigencia=payload.fecha_vigencia,
     )
 
 
@@ -782,6 +804,61 @@ def send_product_rejected_email(
     return {
         'email_sent_to': str(payload.correo_institu),
         'id_pub': payload.id_pub,
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def send_policies_updated_email(
+    payload: PoliciesUpdatedRequest,
+    settings: SMTPSettings | None = None,
+) -> dict[str, int | str | None]:
+    resolved_settings = settings or SMTPSettings()
+    smtp_config = build_smtp_config(resolved_settings)
+    total_recipients = len(payload.recipients)
+    sent_successfully = 0
+    failed = 0
+
+    try:
+        if smtp_config['use_ssl']:
+            smtp_client_context = SMTP(smtp_config['host'], smtp_config['port'], timeout=smtp_config['timeout'])
+        else:
+            smtp_client_context = SMTP(smtp_config['host'], smtp_config['port'], timeout=smtp_config['timeout'])
+
+        with smtp_client_context as smtp_client:
+            smtp_client.ehlo()
+            if not smtp_config['use_ssl'] and smtp_config['use_tls']:
+                smtp_client.starttls(context=ssl.create_default_context())
+                smtp_client.ehlo()
+
+            _authenticate_with_plain(
+                smtp_client,
+                smtp_config['username'],
+                smtp_config['password'],
+            )
+
+            for recipient in payload.recipients:
+                try:
+                    _validate_institutional_domain(recipient, resolved_settings)
+                    html_body = _render_policies_updated_html(payload, recipient)
+                    message = MIMEText(html_body, 'html', 'utf-8')
+                    message['Subject'] = f"Actualización de políticas: {payload.tipo_doc} v{payload.version_nueva}"
+                    message['From'] = resolved_settings.from_address
+                    message['To'] = str(recipient.correo_institu)
+                    smtp_client.send_message(message)
+                    sent_successfully += 1
+                except InstitutionalDomainError:
+                    failed += 1
+    except SMTPAuthenticationError as exc:
+        raise SMTPAuthError('Error de autenticación SMTP.') from exc
+    except (SMTPRecipientsRefused, SMTPException, OSError) as exc:
+        raise SMTPDeliveryError('No fue posible entregar el correo.') from exc
+
+    return {
+        'total_recipients': total_recipients,
+        'sent_successfully': sent_successfully,
+        'failed': failed,
+        'id_doc': payload.id_doc,
+        'version_nueva': payload.version_nueva,
         'timestamp': datetime.now(timezone.utc).isoformat(),
     }
 

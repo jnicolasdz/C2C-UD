@@ -71,6 +71,25 @@ class ProductRejectedRequest(BaseModel):
     recomendaciones: Annotated[str | None, Field(max_length=500)] = None
 
 
+class PoliciesUpdatedRecipient(BaseModel):
+    codigo_user: int = Field(ge=1)
+    correo_institu: Annotated[EmailStr, Field(max_length=150)]
+    primer_nomb: Annotated[str, Field(min_length=1, max_length=100)]
+
+
+class PoliciesUpdatedRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    recipients: list[PoliciesUpdatedRecipient] = Field(min_length=1, max_length=500)
+    id_doc: int = Field(ge=1)
+    tipo_doc: Annotated[str, Field(min_length=1, max_length=100)]
+    version_nueva: Annotated[str, Field(min_length=1, max_length=50)]
+    resumen_cambios: Annotated[str, Field(min_length=1, max_length=1000)]
+    numero_contrato: int = Field(ge=1)
+    enlace_documento: Annotated[str | None, Field(max_length=500)] = None
+    fecha_vigencia: Annotated[str | None, Field(pattern=r"^\d{4}-\d{2}-\d{2}$")] = None
+
+
 class DiscountAvailableRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
