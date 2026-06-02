@@ -58,6 +58,19 @@ class AccountSuspendedRequest(BaseModel):
     instrucciones_apelacion: Annotated[str | None, Field(max_length=500)] = None
 
 
+class ProductRejectedRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    codigo_user: int = Field(ge=1)
+    correo_institu: Annotated[EmailStr, Field(max_length=150)]
+    primer_nomb: Annotated[str, Field(min_length=1, max_length=100)]
+    id_pub: int = Field(ge=1)
+    nombre_pub: Annotated[str, Field(min_length=1, max_length=150)]
+    motivo_rechazo: Annotated[str, Field(min_length=1, max_length=255)]
+    numero_contrato: int = Field(ge=1)
+    recomendaciones: Annotated[str | None, Field(max_length=500)] = None
+
+
 class DiscountAvailableRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 

@@ -10,6 +10,7 @@ from app.schemas.email_schema import (
     GeneralPromotionRequest,
     OtpSendRequest,
     PasswordChangedRequest,
+    ProductRejectedRequest,
     RegisterConfirmationRequest,
     ReferralInvitationRequest,
     ReferralRewardRequest,
@@ -30,6 +31,7 @@ from app.services.email_service import (
     send_otp_email,
     send_password_changed_email,
     send_account_suspended_email,
+    send_product_rejected_email,
     send_referral_invitation_email,
     send_referral_reward_email,
     send_news_email,
@@ -418,6 +420,43 @@ def account_suspended(
     return {
         "success": True,
         "message": "Correo de suspensión enviado.",
+        "correlation_id": x_correlation_id,
+        "data": data,
+    }
+
+
+@router.post("/emails/moderation/product-rejected", status_code=status.HTTP_200_OK)
+def product_rejected(
+    payload: ProductRejectedRequest,
+    settings: SMTPSettings = Depends(_verify_api_key),
+    x_correlation_id: str | None = Header(default=None, alias="X-Correlation-ID"),
+) -> dict[str, object | None]:
+    try:
+        data = send_product_rejected_email(payload, settings=settings)
+    except InstitutionalDomainError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=_error_response("VAL_003", str(exc), correlation_id=x_correlation_id),
+        ) from exc
+    except TemplateMissingError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=_error_response("TPL_001", str(exc), correlation_id=x_correlation_id),
+        ) from exc
+    except SMTPAuthError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=_error_response("SMTP_002", str(exc), correlation_id=x_correlation_id),
+        ) from exc
+    except SMTPDeliveryError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=_error_response("SMTP_001", str(exc), correlation_id=x_correlation_id),
+        ) from exc
+
+    return {
+        "success": True,
+        "message": "Notificación de rechazo enviada.",
         "correlation_id": x_correlation_id,
         "data": data,
     }

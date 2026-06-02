@@ -19,6 +19,7 @@ from app.schemas.email_schema import (
     GeneralPromotionRequest,
     OtpSendRequest,
     PasswordChangedRequest,
+    ProductRejectedRequest,
     RegisterConfirmationRequest,
     ReferralInvitationRequest,
     ReferralRewardRequest,
@@ -36,6 +37,7 @@ BIRTHDAY_DISCOUNT_TEMPLATE_NAME = "promotions/birthday_discount.html"
 GENERAL_PROMOTION_TEMPLATE_NAME = "promotions/general_promotion.html"
 WELCOME_DISCOUNT_TEMPLATE_NAME = "promotions/welcome_discount.html"
 ACCOUNT_SUSPENDED_TEMPLATE_NAME = "moderation/account_suspended.html"
+PRODUCT_REJECTED_TEMPLATE_NAME = "moderation/product_rejected.html"
 REFERRAL_INVITATION_TEMPLATE_NAME = "referrals/referral_invitation.html"
 REFERRAL_REWARD_TEMPLATE_NAME = "referrals/referral_reward.html"
 NEWS_TEMPLATE_NAME = "newsletters/news.html"
@@ -266,6 +268,24 @@ def _render_account_suspended_html(payload: AccountSuspendedRequest) -> str:
         numero_contrato=payload.numero_contrato,
         fecha_suspension=payload.fecha_suspension,
         instrucciones_apelacion=payload.instrucciones_apelacion,
+    )
+
+
+def _render_product_rejected_html(payload: ProductRejectedRequest) -> str:
+    try:
+        template = template_environment.get_template(PRODUCT_REJECTED_TEMPLATE_NAME)
+    except TemplateNotFound as exc:
+        raise TemplateMissingError("No se encontró el template de producto rechazado.") from exc
+
+    return template.render(
+        codigo_user=payload.codigo_user,
+        correo_institu=payload.correo_institu,
+        primer_nomb=payload.primer_nomb,
+        id_pub=payload.id_pub,
+        nombre_pub=payload.nombre_pub,
+        motivo_rechazo=payload.motivo_rechazo,
+        numero_contrato=payload.numero_contrato,
+        recomendaciones=payload.recomendaciones,
     )
 
 
@@ -713,6 +733,55 @@ def send_account_suspended_email(
 
     return {
         'email_sent_to': str(payload.correo_institu),
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def send_product_rejected_email(
+    payload: ProductRejectedRequest,
+    settings: SMTPSettings | None = None,
+) -> dict[str, str | int]:
+    resolved_settings = settings or SMTPSettings()
+    _validate_institutional_domain(payload, resolved_settings)
+
+    html_body = _render_product_rejected_html(payload)
+    message = MIMEText(html_body, 'html', 'utf-8')
+    message['Subject'] = 'Publicación rechazada en C2C'
+    message['From'] = resolved_settings.from_address
+    message['To'] = str(payload.correo_institu)
+
+    smtp_config = build_smtp_config(resolved_settings)
+
+    try:
+        if smtp_config['use_ssl']:
+            with SMTP(smtp_config['host'], smtp_config['port'], timeout=smtp_config['timeout']) as smtp_client:
+                smtp_client.ehlo()
+                _authenticate_with_plain(
+                    smtp_client,
+                    smtp_config['username'],
+                    smtp_config['password'],
+                )
+                smtp_client.send_message(message)
+        else:
+            with SMTP(smtp_config['host'], smtp_config['port'], timeout=smtp_config['timeout']) as smtp_client:
+                smtp_client.ehlo()
+                if smtp_config['use_tls']:
+                    smtp_client.starttls(context=ssl.create_default_context())
+                    smtp_client.ehlo()
+                _authenticate_with_plain(
+                    smtp_client,
+                    smtp_config['username'],
+                    smtp_config['password'],
+                )
+                smtp_client.send_message(message)
+    except SMTPAuthenticationError as exc:
+        raise SMTPAuthError('Error de autenticación SMTP.') from exc
+    except (SMTPRecipientsRefused, SMTPException, OSError) as exc:
+        raise SMTPDeliveryError('No fue posible entregar el correo.') from exc
+
+    return {
+        'email_sent_to': str(payload.correo_institu),
+        'id_pub': payload.id_pub,
         'timestamp': datetime.now(timezone.utc).isoformat(),
     }
 
