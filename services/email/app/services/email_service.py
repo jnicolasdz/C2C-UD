@@ -10,12 +10,19 @@ from smtplib import SMTP, SMTPAuthenticationError, SMTPException, SMTPRecipients
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound, select_autoescape
 
 from app.core.config import SMTPSettings, build_smtp_config
-from app.schemas.email_schema import EmailVerificationRequest, OtpSendRequest, PasswordChangedRequest, RegisterConfirmationRequest
+from app.schemas.email_schema import (
+    DiscountAvailableRequest,
+    EmailVerificationRequest,
+    OtpSendRequest,
+    PasswordChangedRequest,
+    RegisterConfirmationRequest,
+)
 
 TEMPLATE_NAME = "auth/register_confirmation.html"
 EMAIL_VERIFICATION_TEMPLATE_NAME = "auth/email_verification.html"
 OTP_TEMPLATE_NAME = "auth/otp_code.html"
 PASSWORD_CHANGED_TEMPLATE_NAME = "auth/password_changed.html"
+DISCOUNT_AVAILABLE_TEMPLATE_NAME = "promotions/discount_available.html"
 TEMPLATE_ROOT = Path(__file__).resolve().parents[1] / "templates"
 template_environment = Environment(
     loader=FileSystemLoader(str(TEMPLATE_ROOT)),
@@ -64,7 +71,7 @@ def _build_password_changed_display_name(payload: PasswordChangedRequest) -> str
     return payload.primer_nomb or "Usuario"
 
 
-def _validate_institutional_domain(payload: RegisterConfirmationRequest, settings: SMTPSettings) -> None:
+def _validate_institutional_domain(payload: BaseModel, settings: SMTPSettings) -> None:
     if not settings.allowed_institutional_domain:
         return
 
@@ -138,6 +145,28 @@ def _render_password_changed_html(payload: PasswordChangedRequest) -> str:
         fecha_cambio=payload.fecha_cambio,
         display_name=_build_password_changed_display_name(payload),
         ip_origen=payload.ip_origen,
+    )
+
+
+def _render_discount_available_html(payload: DiscountAvailableRequest) -> str:
+    try:
+        template = template_environment.get_template(DISCOUNT_AVAILABLE_TEMPLATE_NAME)
+    except TemplateNotFound as exc:
+        raise TemplateMissingError("No se encontró el template de descuento disponible.") from exc
+
+    return template.render(
+        codigo_user=payload.codigo_user,
+        correo_institu=payload.correo_institu,
+        id_cupon=payload.id_cupon,
+        id_pub=payload.id_pub,
+        nombre_pub=payload.nombre_pub,
+        precio_original=payload.precio_original,
+        descripcion_prom=payload.descripcion_prom,
+        fecha_inicio=payload.fecha_inicio,
+        fecha_fin=payload.fecha_fin,
+        precio_con_descuento=payload.precio_con_descuento,
+        porcentaje_descuento=payload.porcentaje_descuento,
+        primer_nomb=payload.primer_nomb,
     )
 
 
@@ -343,4 +372,52 @@ def send_password_changed_email(
     return {
         "email_sent_to": str(payload.correo_institu),
         "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+def send_discount_available_email(
+    payload: DiscountAvailableRequest,
+    settings: SMTPSettings | None = None,
+) -> dict[str, str | int]:
+    resolved_settings = settings or SMTPSettings()
+    _validate_institutional_domain(payload, resolved_settings)
+
+    html_body = _render_discount_available_html(payload)
+    message = MIMEText(html_body, 'html', 'utf-8')
+    message['Subject'] = 'Descuento disponible para ti'
+    message['From'] = resolved_settings.from_address
+    message['To'] = str(payload.correo_institu)
+
+    smtp_config = build_smtp_config(resolved_settings)
+
+    try:
+        if smtp_config['use_ssl']:
+            with SMTP(smtp_config['host'], smtp_config['port'], timeout=smtp_config['timeout']) as smtp_client:
+                smtp_client.ehlo()
+                _authenticate_with_plain(
+                    smtp_client,
+                    smtp_config['username'],
+                    smtp_config['password'],
+                )
+                smtp_client.send_message(message)
+        else:
+            with SMTP(smtp_config['host'], smtp_config['port'], timeout=smtp_config['timeout']) as smtp_client:
+                smtp_client.ehlo()
+                if smtp_config['use_tls']:
+                    smtp_client.starttls(context=ssl.create_default_context())
+                    smtp_client.ehlo()
+                _authenticate_with_plain(
+                    smtp_client,
+                    smtp_config['username'],
+                    smtp_config['password'],
+                )
+                smtp_client.send_message(message)
+    except SMTPAuthenticationError as exc:
+        raise SMTPAuthError('Error de autenticación SMTP.') from exc
+    except (SMTPRecipientsRefused, SMTPException, OSError) as exc:
+        raise SMTPDeliveryError('No fue posible entregar el correo.') from exc
+
+    return {
+        'email_sent_to': str(payload.correo_institu),
+        'id_cupon': payload.id_cupon,
+        'timestamp': datetime.now(timezone.utc).isoformat(),
     }

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Descuento Disponible</title>
+  </head>
+  <body>
+    <p>Hola {{ primer_nomb or 'usuario' }},</p>
+    <p>Tenemos un descuento disponible para ti en <strong>{{ nombre_pub }}</strong>.</p>
+    <ul>
+      <li>Cupón: <strong>{{ id_cupon }}</strong></li>
+      <li>Producto: <strong>{{ nombre_pub }}</strong></li>
+      <li>Precio original: <strong>${{ precio_original }}</strong></li>
+      {% if precio_con_descuento is not none %}
+      <li>Precio con descuento: <strong>${{ precio_con_descuento }}</strong></li>
+      {% endif %}
+      {% if porcentaje_descuento is not none %}
+      <li>Descuento: <strong>{{ porcentaje_descuento }}%</strong></li>
+      {% endif %}
+      <li>Válido desde: <strong>{{ fecha_inicio }}</strong></li>
+      <li>Válido hasta: <strong>{{ fecha_fin }}</strong></li>
+    </ul>
+    <p>{{ descripcion_prom }}</p>
+    <p>Gracias por elegirnos.</p>
+  </body>
+</html>
