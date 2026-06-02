@@ -63,6 +63,18 @@ class DiscountAvailableRequest(BaseModel):
     porcentaje_descuento: Annotated[float | None, Field(ge=0, le=100)] = None
 
 
+class BirthdayDiscountRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    codigo_user: int = Field(ge=1)
+    correo_institu: Annotated[EmailStr, Field(max_length=150)]
+    primer_nomb: Annotated[str, Field(min_length=1, max_length=100)]
+    id_cupon: int = Field(ge=1)
+    fecha_fin_cupon: Annotated[str, Field(pattern=r"^\d{4}-\d{2}-\d{2}$")]
+    segundo_nom: Annotated[str | None, Field(max_length=100)] = None
+    descripcion_prom: Annotated[str | None, Field(max_length=500)] = None
+
+
 class GeneralPromotionRecipient(BaseModel):
     codigo_user: int = Field(ge=1)
     correo_institu: Annotated[EmailStr, Field(max_length=150)]

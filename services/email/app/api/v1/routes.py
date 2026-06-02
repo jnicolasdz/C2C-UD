@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, status
 
 from app.core.config import SMTPSettings, get_smtp_settings
 from app.schemas.email_schema import (
+    BirthdayDiscountRequest,
     DiscountAvailableRequest,
     EmailVerificationRequest,
     GeneralPromotionRequest,
@@ -16,6 +17,7 @@ from app.services.email_service import (
     SMTPAuthError,
     SMTPDeliveryError,
     TemplateMissingError,
+    send_birthday_discount_email,
     send_discount_available_email,
     send_email_verification_email,
     send_general_promotion_email,
@@ -261,6 +263,43 @@ def discount_available(
     return {
         "success": True,
         "message": "Correo de descuento enviado.",
+        "correlation_id": x_correlation_id,
+        "data": data,
+    }
+
+
+@router.post("/emails/promotions/birthday", status_code=status.HTTP_200_OK)
+def birthday_discount(
+    payload: BirthdayDiscountRequest,
+    settings: SMTPSettings = Depends(_verify_api_key),
+    x_correlation_id: str | None = Header(default=None, alias="X-Correlation-ID"),
+) -> dict[str, object | None]:
+    try:
+        data = send_birthday_discount_email(payload, settings=settings)
+    except InstitutionalDomainError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=_error_response("VAL_003", str(exc), correlation_id=x_correlation_id),
+        ) from exc
+    except TemplateMissingError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=_error_response("TPL_001", str(exc), correlation_id=x_correlation_id),
+        ) from exc
+    except SMTPAuthError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=_error_response("SMTP_002", str(exc), correlation_id=x_correlation_id),
+        ) from exc
+    except SMTPDeliveryError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=_error_response("SMTP_001", str(exc), correlation_id=x_correlation_id),
+        ) from exc
+
+    return {
+        "success": True,
+        "message": "Correo de cumpleaños enviado.",
         "correlation_id": x_correlation_id,
         "data": data,
     }

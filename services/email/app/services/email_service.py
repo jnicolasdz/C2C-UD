@@ -25,6 +25,7 @@ EMAIL_VERIFICATION_TEMPLATE_NAME = "auth/email_verification.html"
 OTP_TEMPLATE_NAME = "auth/otp_code.html"
 PASSWORD_CHANGED_TEMPLATE_NAME = "auth/password_changed.html"
 DISCOUNT_AVAILABLE_TEMPLATE_NAME = "promotions/discount_available.html"
+BIRTHDAY_DISCOUNT_TEMPLATE_NAME = "promotions/birthday_discount.html"
 GENERAL_PROMOTION_TEMPLATE_NAME = "promotions/general_promotion.html"
 TEMPLATE_ROOT = Path(__file__).resolve().parents[1] / "templates"
 template_environment = Environment(
@@ -170,6 +171,23 @@ def _render_discount_available_html(payload: DiscountAvailableRequest) -> str:
         precio_con_descuento=payload.precio_con_descuento,
         porcentaje_descuento=payload.porcentaje_descuento,
         primer_nomb=payload.primer_nomb,
+    )
+
+
+def _render_birthday_discount_html(payload: BirthdayDiscountRequest) -> str:
+    try:
+        template = template_environment.get_template(BIRTHDAY_DISCOUNT_TEMPLATE_NAME)
+    except TemplateNotFound as exc:
+        raise TemplateMissingError("No se encontró el template de descuento de cumpleaños.") from exc
+
+    return template.render(
+        codigo_user=payload.codigo_user,
+        correo_institu=payload.correo_institu,
+        primer_nomb=payload.primer_nomb,
+        segundo_nom=payload.segundo_nom,
+        id_cupon=payload.id_cupon,
+        fecha_fin_cupon=payload.fecha_fin_cupon,
+        descripcion_prom=payload.descripcion_prom,
     )
 
 
@@ -404,6 +422,55 @@ def send_discount_available_email(
     html_body = _render_discount_available_html(payload)
     message = MIMEText(html_body, 'html', 'utf-8')
     message['Subject'] = 'Descuento disponible para ti'
+    message['From'] = resolved_settings.from_address
+    message['To'] = str(payload.correo_institu)
+
+    smtp_config = build_smtp_config(resolved_settings)
+
+    try:
+        if smtp_config['use_ssl']:
+            with SMTP(smtp_config['host'], smtp_config['port'], timeout=smtp_config['timeout']) as smtp_client:
+                smtp_client.ehlo()
+                _authenticate_with_plain(
+                    smtp_client,
+                    smtp_config['username'],
+                    smtp_config['password'],
+                )
+                smtp_client.send_message(message)
+        else:
+            with SMTP(smtp_config['host'], smtp_config['port'], timeout=smtp_config['timeout']) as smtp_client:
+                smtp_client.ehlo()
+                if smtp_config['use_tls']:
+                    smtp_client.starttls(context=ssl.create_default_context())
+                    smtp_client.ehlo()
+                _authenticate_with_plain(
+                    smtp_client,
+                    smtp_config['username'],
+                    smtp_config['password'],
+                )
+                smtp_client.send_message(message)
+    except SMTPAuthenticationError as exc:
+        raise SMTPAuthError('Error de autenticación SMTP.') from exc
+    except (SMTPRecipientsRefused, SMTPException, OSError) as exc:
+        raise SMTPDeliveryError('No fue posible entregar el correo.') from exc
+
+    return {
+        'email_sent_to': str(payload.correo_institu),
+        'id_cupon': payload.id_cupon,
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def send_birthday_discount_email(
+    payload: BirthdayDiscountRequest,
+    settings: SMTPSettings | None = None,
+) -> dict[str, str | int]:
+    resolved_settings = settings or SMTPSettings()
+    _validate_institutional_domain(payload, resolved_settings)
+
+    html_body = _render_birthday_discount_html(payload)
+    message = MIMEText(html_body, 'html', 'utf-8')
+    message['Subject'] = 'Descuento de cumpleaños'
     message['From'] = resolved_settings.from_address
     message['To'] = str(payload.correo_institu)
 
