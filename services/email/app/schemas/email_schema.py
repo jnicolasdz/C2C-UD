@@ -34,3 +34,13 @@ class OtpSendRequest(BaseModel):
     expiration_minutes: int = Field(ge=1, le=10)
     primer_nomb: Annotated[str | None, Field(max_length=100)] = None
     device_hint: Annotated[str | None, Field(max_length=100)] = None
+
+
+class PasswordChangedRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    codigo_user: int = Field(ge=1)
+    correo_institu: Annotated[EmailStr, Field(max_length=150)]
+    fecha_cambio: Annotated[str, Field(pattern=r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$")]
+    primer_nomb: Annotated[str | None, Field(max_length=100)] = None
+    ip_origen: Annotated[str | None, Field(max_length=45)] = None

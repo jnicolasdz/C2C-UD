@@ -10,11 +10,12 @@ from smtplib import SMTP, SMTPAuthenticationError, SMTPException, SMTPRecipients
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound, select_autoescape
 
 from app.core.config import SMTPSettings, build_smtp_config
-from app.schemas.email_schema import EmailVerificationRequest, OtpSendRequest, RegisterConfirmationRequest
+from app.schemas.email_schema import EmailVerificationRequest, OtpSendRequest, PasswordChangedRequest, RegisterConfirmationRequest
 
 TEMPLATE_NAME = "auth/register_confirmation.html"
 EMAIL_VERIFICATION_TEMPLATE_NAME = "auth/email_verification.html"
 OTP_TEMPLATE_NAME = "auth/otp_code.html"
+PASSWORD_CHANGED_TEMPLATE_NAME = "auth/password_changed.html"
 TEMPLATE_ROOT = Path(__file__).resolve().parents[1] / "templates"
 template_environment = Environment(
     loader=FileSystemLoader(str(TEMPLATE_ROOT)),
@@ -56,6 +57,10 @@ def _build_verification_display_name(payload: EmailVerificationRequest) -> str:
 
 
 def _build_otp_display_name(payload: OtpSendRequest) -> str:
+    return payload.primer_nomb or "Usuario"
+
+
+def _build_password_changed_display_name(payload: PasswordChangedRequest) -> str:
     return payload.primer_nomb or "Usuario"
 
 
@@ -118,6 +123,21 @@ def _render_otp_html(payload: OtpSendRequest) -> str:
         expiration_minutes=payload.expiration_minutes,
         display_name=_build_otp_display_name(payload),
         device_hint=payload.device_hint,
+    )
+
+
+def _render_password_changed_html(payload: PasswordChangedRequest) -> str:
+    try:
+        template = template_environment.get_template(PASSWORD_CHANGED_TEMPLATE_NAME)
+    except TemplateNotFound as exc:
+        raise TemplateMissingError("No se encontró el template de cambio de contraseña.") from exc
+
+    return template.render(
+        codigo_user=payload.codigo_user,
+        correo_institu=payload.correo_institu,
+        fecha_cambio=payload.fecha_cambio,
+        display_name=_build_password_changed_display_name(payload),
+        ip_origen=payload.ip_origen,
     )
 
 
@@ -274,5 +294,53 @@ def send_otp_email(
         "email_sent_to": str(payload.correo_institu),
         "otp_expires_in_minutes": payload.expiration_minutes,
         "template_used": OTP_TEMPLATE_NAME,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def send_password_changed_email(
+    payload: PasswordChangedRequest,
+    settings: SMTPSettings | None = None,
+) -> dict[str, str]:
+    resolved_settings = settings or SMTPSettings()
+    _validate_institutional_domain(payload, resolved_settings)
+
+    html_body = _render_password_changed_html(payload)
+    message = MIMEText(html_body, "html", "utf-8")
+    message["Subject"] = "Alerta de cambio de contraseña"
+    message["From"] = resolved_settings.from_address
+    message["To"] = str(payload.correo_institu)
+
+    smtp_config = build_smtp_config(resolved_settings)
+
+    try:
+        if smtp_config["use_ssl"]:
+            with SMTP(smtp_config["host"], smtp_config["port"], timeout=smtp_config["timeout"]) as smtp_client:
+                smtp_client.ehlo()
+                _authenticate_with_plain(
+                    smtp_client,
+                    smtp_config["username"],
+                    smtp_config["password"],
+                )
+                smtp_client.send_message(message)
+        else:
+            with SMTP(smtp_config["host"], smtp_config["port"], timeout=smtp_config["timeout"]) as smtp_client:
+                smtp_client.ehlo()
+                if smtp_config["use_tls"]:
+                    smtp_client.starttls(context=ssl.create_default_context())
+                    smtp_client.ehlo()
+                _authenticate_with_plain(
+                    smtp_client,
+                    smtp_config["username"],
+                    smtp_config["password"],
+                )
+                smtp_client.send_message(message)
+    except SMTPAuthenticationError as exc:
+        raise SMTPAuthError("Error de autenticación SMTP.") from exc
+    except (SMTPRecipientsRefused, SMTPException, OSError) as exc:
+        raise SMTPDeliveryError("No fue posible entregar el correo.") from exc
+
+    return {
+        "email_sent_to": str(payload.correo_institu),
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
