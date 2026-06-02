@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from app.core.config import SMTPSettings, build_smtp_config
 from app.schemas.email_schema import (
+    AccountSuspendedRequest,
     BirthdayDiscountRequest,
     DiscountAvailableRequest,
     EmailVerificationRequest,
@@ -34,6 +35,7 @@ DISCOUNT_AVAILABLE_TEMPLATE_NAME = "promotions/discount_available.html"
 BIRTHDAY_DISCOUNT_TEMPLATE_NAME = "promotions/birthday_discount.html"
 GENERAL_PROMOTION_TEMPLATE_NAME = "promotions/general_promotion.html"
 WELCOME_DISCOUNT_TEMPLATE_NAME = "promotions/welcome_discount.html"
+ACCOUNT_SUSPENDED_TEMPLATE_NAME = "moderation/account_suspended.html"
 REFERRAL_INVITATION_TEMPLATE_NAME = "referrals/referral_invitation.html"
 REFERRAL_REWARD_TEMPLATE_NAME = "referrals/referral_reward.html"
 NEWS_TEMPLATE_NAME = "newsletters/news.html"
@@ -247,6 +249,23 @@ def _render_referral_reward_html(payload: ReferralRewardRequest) -> str:
         referred_user_nombre=payload.referred_user_nombre,
         recompensa_descripcion=payload.recompensa_descripcion,
         id_cupon_recompensa=payload.id_cupon_recompensa,
+    )
+
+
+def _render_account_suspended_html(payload: AccountSuspendedRequest) -> str:
+    try:
+        template = template_environment.get_template(ACCOUNT_SUSPENDED_TEMPLATE_NAME)
+    except TemplateNotFound as exc:
+        raise TemplateMissingError("No se encontró el template de suspensión de cuenta.") from exc
+
+    return template.render(
+        codigo_user=payload.codigo_user,
+        correo_institu=payload.correo_institu,
+        primer_nomb=payload.primer_nomb,
+        motivo_suspension=payload.motivo_suspension,
+        numero_contrato=payload.numero_contrato,
+        fecha_suspension=payload.fecha_suspension,
+        instrucciones_apelacion=payload.instrucciones_apelacion,
     )
 
 
@@ -646,6 +665,54 @@ def send_welcome_discount_email(
     return {
         'email_sent_to': str(payload.correo_institu),
         'id_cupon': payload.id_cupon,
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def send_account_suspended_email(
+    payload: AccountSuspendedRequest,
+    settings: SMTPSettings | None = None,
+) -> dict[str, str | int]:
+    resolved_settings = settings or SMTPSettings()
+    _validate_institutional_domain(payload, resolved_settings)
+
+    html_body = _render_account_suspended_html(payload)
+    message = MIMEText(html_body, 'html', 'utf-8')
+    message['Subject'] = 'Cuenta suspendida en C2C'
+    message['From'] = resolved_settings.from_address
+    message['To'] = str(payload.correo_institu)
+
+    smtp_config = build_smtp_config(resolved_settings)
+
+    try:
+        if smtp_config['use_ssl']:
+            with SMTP(smtp_config['host'], smtp_config['port'], timeout=smtp_config['timeout']) as smtp_client:
+                smtp_client.ehlo()
+                _authenticate_with_plain(
+                    smtp_client,
+                    smtp_config['username'],
+                    smtp_config['password'],
+                )
+                smtp_client.send_message(message)
+        else:
+            with SMTP(smtp_config['host'], smtp_config['port'], timeout=smtp_config['timeout']) as smtp_client:
+                smtp_client.ehlo()
+                if smtp_config['use_tls']:
+                    smtp_client.starttls(context=ssl.create_default_context())
+                    smtp_client.ehlo()
+                _authenticate_with_plain(
+                    smtp_client,
+                    smtp_config['username'],
+                    smtp_config['password'],
+                )
+                smtp_client.send_message(message)
+    except SMTPAuthenticationError as exc:
+        raise SMTPAuthError('Error de autenticación SMTP.') from exc
+    except (SMTPRecipientsRefused, SMTPException, OSError) as exc:
+        raise SMTPDeliveryError('No fue posible entregar el correo.') from exc
+
+    return {
+        'email_sent_to': str(payload.correo_institu),
         'timestamp': datetime.now(timezone.utc).isoformat(),
     }
 

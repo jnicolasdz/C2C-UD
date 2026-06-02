@@ -46,6 +46,18 @@ class PasswordChangedRequest(BaseModel):
     ip_origen: Annotated[str | None, Field(max_length=45)] = None
 
 
+class AccountSuspendedRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    codigo_user: int = Field(ge=1)
+    correo_institu: Annotated[EmailStr, Field(max_length=150)]
+    primer_nomb: Annotated[str, Field(min_length=1, max_length=100)]
+    motivo_suspension: Annotated[str, Field(min_length=1, max_length=255)]
+    numero_contrato: int = Field(ge=1)
+    fecha_suspension: Annotated[str | None, Field(pattern=r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$")] = None
+    instrucciones_apelacion: Annotated[str | None, Field(max_length=500)] = None
+
+
 class DiscountAvailableRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
