@@ -12,12 +12,14 @@ from pydantic import BaseModel
 
 from app.core.config import SMTPSettings, build_smtp_config
 from app.schemas.email_schema import (
+    BirthdayDiscountRequest,
     DiscountAvailableRequest,
     EmailVerificationRequest,
     GeneralPromotionRequest,
     OtpSendRequest,
     PasswordChangedRequest,
     RegisterConfirmationRequest,
+    ReferralInvitationRequest,
     WelcomeDiscountRequest,
 )
 
@@ -29,6 +31,7 @@ DISCOUNT_AVAILABLE_TEMPLATE_NAME = "promotions/discount_available.html"
 BIRTHDAY_DISCOUNT_TEMPLATE_NAME = "promotions/birthday_discount.html"
 GENERAL_PROMOTION_TEMPLATE_NAME = "promotions/general_promotion.html"
 WELCOME_DISCOUNT_TEMPLATE_NAME = "promotions/welcome_discount.html"
+REFERRAL_INVITATION_TEMPLATE_NAME = "referrals/referral_invitation.html"
 TEMPLATE_ROOT = Path(__file__).resolve().parents[1] / "templates"
 template_environment = Environment(
     loader=FileSystemLoader(str(TEMPLATE_ROOT)),
@@ -206,6 +209,22 @@ def _render_welcome_discount_html(payload: WelcomeDiscountRequest) -> str:
         id_cupon=payload.id_cupon,
         fecha_fin_cupon=payload.fecha_fin_cupon,
         descripcion_prom=payload.descripcion_prom,
+    )
+
+
+def _render_referral_invitation_html(payload: ReferralInvitationRequest) -> str:
+    try:
+        template = template_environment.get_template(REFERRAL_INVITATION_TEMPLATE_NAME)
+    except TemplateNotFound as exc:
+        raise TemplateMissingError("No se encontró el template de invitación de referido.") from exc
+
+    return template.render(
+        referrer_codigo_user=payload.referrer_codigo_user,
+        referrer_nombre=payload.referrer_nombre,
+        invitee_correo=payload.invitee_correo,
+        referral_code=payload.referral_code,
+        referral_link=payload.referral_link,
+        mensaje_personalizado=payload.mensaje_personalizado,
     )
 
 
@@ -573,6 +592,61 @@ def send_welcome_discount_email(
     return {
         'email_sent_to': str(payload.correo_institu),
         'id_cupon': payload.id_cupon,
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def send_referral_invitation_email(
+    payload: ReferralInvitationRequest,
+    settings: SMTPSettings | None = None,
+) -> dict[str, str]:
+    resolved_settings = settings or SMTPSettings()
+    
+    # Validate institutional domain for invitee
+    class InviteePayload:
+        def __init__(self, correo_institu):
+            self.correo_institu = correo_institu
+    
+    _validate_institutional_domain(InviteePayload(payload.invitee_correo), resolved_settings)
+
+    html_body = _render_referral_invitation_html(payload)
+    message = MIMEText(html_body, 'html', 'utf-8')
+    message['Subject'] = f'{payload.referrer_nombre} te invita a unirte a C2C'
+    message['From'] = resolved_settings.from_address
+    message['To'] = str(payload.invitee_correo)
+
+    smtp_config = build_smtp_config(resolved_settings)
+
+    try:
+        if smtp_config['use_ssl']:
+            with SMTP(smtp_config['host'], smtp_config['port'], timeout=smtp_config['timeout']) as smtp_client:
+                smtp_client.ehlo()
+                _authenticate_with_plain(
+                    smtp_client,
+                    smtp_config['username'],
+                    smtp_config['password'],
+                )
+                smtp_client.send_message(message)
+        else:
+            with SMTP(smtp_config['host'], smtp_config['port'], timeout=smtp_config['timeout']) as smtp_client:
+                smtp_client.ehlo()
+                if smtp_config['use_tls']:
+                    smtp_client.starttls(context=ssl.create_default_context())
+                    smtp_client.ehlo()
+                _authenticate_with_plain(
+                    smtp_client,
+                    smtp_config['username'],
+                    smtp_config['password'],
+                )
+                smtp_client.send_message(message)
+    except SMTPAuthenticationError as exc:
+        raise SMTPAuthError('Error de autenticación SMTP.') from exc
+    except (SMTPRecipientsRefused, SMTPException, OSError) as exc:
+        raise SMTPDeliveryError('No fue posible entregar el correo.') from exc
+
+    return {
+        'email_sent_to': str(payload.invitee_correo),
+        'referral_code': payload.referral_code,
         'timestamp': datetime.now(timezone.utc).isoformat(),
     }
 

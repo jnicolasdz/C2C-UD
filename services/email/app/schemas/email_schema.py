@@ -100,3 +100,14 @@ class WelcomeDiscountRequest(BaseModel):
     id_cupon: int = Field(ge=1)
     fecha_fin_cupon: Annotated[str, Field(pattern=r"^\d{4}-\d{2}-\d{2}$")]
     descripcion_prom: Annotated[str | None, Field(max_length=500)] = None
+
+
+class ReferralInvitationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    referrer_codigo_user: int = Field(ge=1)
+    referrer_nombre: Annotated[str, Field(min_length=1, max_length=100)]
+    invitee_correo: Annotated[EmailStr, Field(max_length=150)]
+    referral_code: Annotated[str, Field(min_length=1, max_length=50, pattern="^[A-Z0-9_-]+$")]
+    referral_link: Annotated[str, Field(min_length=1, max_length=500)]
+    mensaje_personalizado: Annotated[str | None, Field(max_length=300)] = None
