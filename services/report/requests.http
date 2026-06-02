@@ -1,0 +1,36 @@
+### Health check
+GET http://localhost:8004/health
+
+### Crear reporte
+POST http://localhost:8004/api/v1/reports
+Content-Type: application/json
+
+{
+  "user_name": "Sebastián Henriquez",
+  "user_email": "usuario@correo.com",
+  "report_type": "Problema con publicación",
+  "subject": "No aparece mi producto publicado",
+  "description": "El producto fue creado, pero no aparece en el marketplace."
+}
+
+### Listar reportes
+GET http://localhost:8004/api/v1/reports
+
+### Consultar reporte por ID
+GET http://localhost:8004/api/v1/reports/1
+
+### Consultar por radicado
+# Cambia el radicado por uno real retornado al crear un reporte.
+GET http://localhost:8004/api/v1/reports/tracking/RPT-20260601-ABC12345
+
+### Actualizar reporte
+PUT http://localhost:8004/api/v1/reports/1
+Content-Type: application/json
+
+{
+  "status": "EN_REVISION",
+  "response_message": "El reporte fue asignado al equipo de soporte."
+}
+
+### Eliminar reporte
+DELETE http://localhost:8004/api/v1/reports/1
