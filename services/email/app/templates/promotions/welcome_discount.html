@@ -1,0 +1,15 @@
+<html>
+  <body>
+    <h1>¡Bienvenida a C2C, {{ primer_nomb }}!</h1>
+    <p>Nos alegra mucho tener un nuevo miembro en la plataforma. Para celebrar tu llegada, te hemos preparado una sorpresa especial.</p>
+    <p>Tu cupón de bienvenida <strong>#{{ id_cupon }}</strong> está listo para usar en tu primera compra.</p>
+    {% if descripcion_prom %}
+      <p>{{ descripcion_prom }}</p>
+    {% else %}
+      <p>Disfruta de un descuento especial en tu próxima compra y comienza a explorar todas las ofertas disponibles en nuestra plataforma.</p>
+    {% endif %}
+    <p>Válido hasta: <strong>{{ fecha_fin_cupon }}</strong>.</p>
+    <p>Si tienes alguna pregunta o necesitas ayuda, no dudes en contactarnos.</p>
+    <p>¡Que disfrutes tu experiencia en C2C!</p>
+  </body>
+</html>

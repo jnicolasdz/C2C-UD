@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>C2C-UD | Panel admin</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfQZ8p6vxIvphN+Xx9IhZTohZ8lA44Uc=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body data-page="admin">
+  <header class="page-header admin-header">
+    <nav class="topbar compact">
+      <a class="brand brand-link" href="index.html">
+        <span class="brand-mark">UD</span>
+        <div><strong>C2C-UD</strong><small>Panel administrador</small></div>
+      </a>
+      <div class="top-actions">
+        <a class="ghost" href="usuario.html">Vista usuario</a>
+        <a class="ghost" href="http://localhost:8025" target="_blank" rel="noreferrer">Abrir Mailpit</a>
+        <button class="ghost" id="btn-check-all">Validar servicios</button>
+      </div>
+    </nav>
+    <div class="page-heading">
+      <span class="eyebrow">Rol administrador</span>
+      <h1>Panel para sustentar, probar y operar los servicios.</h1>
+      <p>Usa endpoints reales para generar datos de prueba, revisar resultados y mostrar diagramas en vivo.</p>
+    </div>
+  </header>
+
+  <main class="container admin-grid">
+    <aside class="sidebar">
+      <section class="card sticky">
+        <h2>Servicios</h2>
+        <div class="status-list block">
+          <span class="pill muted" id="status-coupon">Cupones</span>
+          <span class="pill muted" id="status-email">Correos</span>
+          <span class="pill muted" id="status-geolocation">Geolocalización</span>
+          <span class="pill muted" id="status-report">Reportes</span>
+        </div>
+        <hr />
+        <nav class="side-nav">
+          <a href="#admin-reports">Reportes</a>
+          <a href="#admin-geo">Geolocalización</a>
+          <a href="#admin-coupons">Cupones</a>
+          <a href="#admin-emails">Correos</a>
+          <a href="#admin-endpoints">Banco técnico</a>
+        </nav>
+      </section>
+    </aside>
+
+    <section class="content-flow">
+      <section class="card" id="admin-reports">
+        <div class="section-title">
+          <div>
+            <span class="eyebrow">Reportes</span>
+            <h2>Gestión administrativa de reportes</h2>
+          </div>
+          <div class="actions-wrap">
+            <button class="btn secondary" id="btn-seed-report">Crear caso demo</button>
+            <button class="btn dark" id="btn-load-reports">Listar reportes</button>
+          </div>
+        </div>
+
+        <form id="report-filter-form" class="form-grid slim">
+          <label>Correo usuario
+            <input name="user_email" placeholder="jsebastian.henriquezb@udistrital.edu.co" />
+          </label>
+          <label>Estado envío
+            <select name="send_status">
+              <option value="">Todos</option>
+              <option value="PENDIENTE">PENDIENTE</option>
+              <option value="ENVIADO">ENVIADO</option>
+              <option value="FALLIDO">FALLIDO</option>
+            </select>
+          </label>
+          <label class="checkbox-line"><input type="checkbox" name="include_deleted" /> Incluir eliminados</label>
+          <button class="btn primary" type="submit">Aplicar filtros</button>
+        </form>
+
+        <div class="endpoint-actions mt-md">
+          <button class="btn secondary" id="btn-load-pending-reports">GET /reports/pending</button>
+          <button class="btn secondary" id="btn-load-failed-reports">GET /reports/failed</button>
+          <form id="report-id-form" class="inline-form">
+            <input name="report_id" type="number" min="1" placeholder="ID reporte" required />
+            <button class="btn dark" type="submit">GET /reports/{id}</button>
+          </form>
+        </div>
+
+        <div class="dashboard-row">
+          <div class="stat"><strong id="stat-total-reports">0</strong><span>Total</span></div>
+          <div class="stat"><strong id="stat-sent-reports">0</strong><span>Enviados</span></div>
+          <div class="stat"><strong id="stat-pending-reports">0</strong><span>Pendientes</span></div>
+          <div class="stat"><strong id="stat-failed-reports">0</strong><span>Fallidos</span></div>
+        </div>
+        <div class="chart-card"><div id="reports-chart" class="bar-chart empty-state">Sin datos para graficar.</div></div>
+        <div id="reports-table" class="table-wrap mt-md empty-state">No hay reportes cargados.</div>
+
+        <details class="mt-lg">
+          <summary>Actualizar estado de un reporte</summary>
+          <form id="update-report-form" class="form-grid mt-md">
+            <label>ID reporte <input name="report_id" type="number" min="1" required /></label>
+            <label>Estado funcional
+              <select name="status">
+                <option value="RECIBIDO">RECIBIDO</option>
+                <option value="EN_REVISION">EN_REVISION</option>
+                <option value="EN_PROCESO">EN_PROCESO</option>
+                <option value="RESUELTO">RESUELTO</option>
+                <option value="RECHAZADO">RECHAZADO</option>
+                <option value="CERRADO">CERRADO</option>
+              </select>
+            </label>
+            <label>Mensaje de gestión <input name="delivery_message" value="Reporte revisado desde el panel admin." /></label>
+            <button class="btn primary" type="submit">Actualizar</button>
+          </form>
+        </details>
+        <pre class="console" id="report-admin-output">Sin acciones todavía.</pre>
+      </section>
+
+      <section class="card" id="admin-geo">
+        <div class="section-title">
+          <div>
+            <span class="eyebrow">Geolocalización</span>
+            <h2>Administrar sedes y visualizar mapa real</h2>
+            <p class="small">Prueba todos los endpoints del servicio y centra cada resultado en Bogotá usando Leaflet/OpenStreetMap.</p>
+          </div>
+          <button class="btn dark" id="btn-load-admin-locations">GET /geolocation/all_address</button>
+        </div>
+        <div class="map-layout">
+          <div class="map-card leaflet-card">
+            <div class="map-toolbar">
+              <strong>Mapa administrativo · Bogotá</strong>
+              <span>Marcadores desde API</span>
+            </div>
+            <div class="bogota-map" id="admin-map" aria-label="Mapa administrativo de geolocalización"></div>
+            <div class="map-legend"><span></span> Cada punto usa latitude/longitude devueltos por el servicio.</div>
+          </div>
+          <div class="geo-admin-panel">
+            <form id="admin-geo-search-form" class="stacked compact-form">
+              <label>Endpoint de consulta
+                <select name="mode">
+                  <option value="id">GET /geolocation/id/{location_id}</option>
+                  <option value="name">GET /geolocation/name/{name}</option>
+                  <option value="address">GET /geolocation/address/{address}</option>
+                </select>
+              </label>
+              <label>Valor
+                <input name="query" value="5" placeholder="Ej: 5, Sede Paiba, Cra 7 #40-62" required />
+              </label>
+              <button class="btn dark" type="submit">Buscar, mostrar y centrar</button>
+            </form>
+            <details class="mt-md" open>
+              <summary>POST /geolocation/add/{name}/{description}/{address}/{latitude}/{longitude}</summary>
+              <form id="add-location-form" class="stacked compact-form mt-md">
+                <label>Nombre <input name="name" value="Punto Feria UD" required /></label>
+                <label>Descripción <input name="description" value="Punto temporal para feria de emprendimientos" required /></label>
+                <label>Dirección <input name="address" value="Cra 7 #40B-53, Bogotá, Colombia" required /></label>
+                <div class="mini-grid">
+                  <label>Latitud <input name="latitude" type="number" step="any" value="4.6286" required /></label>
+                  <label>Longitud <input name="longitude" type="number" step="any" value="-74.0658" required /></label>
+                </div>
+                <button class="btn primary" type="submit">Crear sede/punto</button>
+              </form>
+            </details>
+            <form id="delete-location-form" class="inline-form mt-md">
+              <input name="location_id" type="number" min="1" placeholder="ID a eliminar" required />
+              <button class="btn danger" type="submit">DELETE /geolocation/{id}</button>
+            </form>
+          </div>
+        </div>
+        <div id="admin-location-list" class="table-wrap mt-md empty-state">No hay sedes cargadas.</div>
+        <div class="route-diagram mt-md" id="admin-route-diagram"></div>
+        <pre class="console" id="geo-admin-output">Sin acciones todavía.</pre>
+      </section>
+
+      <section class="card" id="admin-coupons">
+        <div class="section-title">
+          <div>
+            <span class="eyebrow">Cupones</span>
+            <h2>Crear, asignar y probar cupones</h2>
+          </div>
+          <div class="actions-wrap">
+            <button class="btn secondary" id="btn-seed-coupons">Crear casos demo</button>
+            <button class="btn dark" id="btn-load-coupons">Listar cupones</button>
+          </div>
+        </div>
+        <form id="create-coupon-form" class="form-grid">
+          <label>Tipo de creación
+            <select name="creation_type">
+              <option value="unassigned">Cupón público/no asignado</option>
+              <option value="assigned">Cupón asignado a usuario</option>
+              <option value="birthday">Cumpleaños</option>
+              <option value="referred">Referido</option>
+            </select>
+          </label>
+          <label>Texto/categoría <input name="text" value="WELCOMEUD" /></label>
+          <label>Descuento decimal <input name="discount" type="number" step="0.01" min="0" max="1" value="0.15" /></label>
+          <label>Días vigencia <input name="days" type="number" min="1" value="30" /></label>
+          <label class="wide">Correo usuario <input name="user_email" type="email" value="jsebastian.henriquezb@udistrital.edu.co" /></label>
+          <button class="btn primary wide" type="submit">Crear cupón</button>
+        </form>
+        <div id="coupon-table" class="table-wrap mt-md empty-state">No hay cupones cargados.</div>
+
+        <details class="mt-lg" open>
+          <summary>Consultas GET exactas de cupones</summary>
+          <form id="coupon-filter-form" class="form-grid mt-md">
+            <label>Consulta
+              <select name="filter_type">
+                <option value="all">GET /coupons</option>
+                <option value="code">GET /coupons/code/{code}</option>
+                <option value="creation-date">GET /coupons/creation-date/{date}</option>
+                <option value="expiration-date">GET /coupons/expiration-date/{date}</option>
+                <option value="expired">GET /coupons/expired</option>
+                <option value="valid">GET /coupons/valid</option>
+                <option value="enabled">GET /coupons/enabled</option>
+                <option value="disabled">GET /coupons/disabled</option>
+                <option value="search">GET /coupons/search/{text}</option>
+                <option value="happy-birthday">GET /coupons/happy-birthday</option>
+                <option value="referred">GET /coupons/referred</option>
+                <option value="last">GET /coupons/last/{text}</option>
+              </select>
+            </label>
+            <label>Valor, si aplica
+              <input name="filter_value" placeholder="Código, fecha YYYY-MM-DD o texto" />
+            </label>
+            <button class="btn dark" type="submit">Ejecutar consulta</button>
+          </form>
+        </details>
+        <div class="coupon-actions mt-md">
+          <form id="coupon-code-action-form" class="inline-form">
+            <input name="coupon_code" placeholder="Código" required />
+            <select name="action">
+              <option value="enable">Habilitar</option>
+              <option value="disable">Deshabilitar</option>
+              <option value="delete">Eliminar</option>
+              <option value="is-enabled">Validar habilitado</option>
+            </select>
+            <button class="btn dark" type="submit">Ejecutar</button>
+          </form>
+          <form id="coupon-search-form" class="inline-form">
+            <input name="text" placeholder="Buscar por texto: WELCOMEUD" required />
+            <button class="btn secondary" type="submit">Buscar</button>
+          </form>
+        </div>
+        <details class="mt-lg">
+          <summary>Usuarios con cupones</summary>
+          <button class="btn dark mt-md" id="btn-load-users-coupons">Ver usuarios</button>
+          <pre class="console" id="users-coupons-output">Sin consulta todavía.</pre>
+        </details>
+        <pre class="console" id="coupon-admin-output">Sin acciones todavía.</pre>
+      </section>
+
+      <section class="card" id="admin-emails">
+        <div class="section-title">
+          <div>
+            <span class="eyebrow">Correos</span>
+            <h2>Enviar plantillas de prueba</h2>
+          </div>
+          <a class="btn secondary" href="http://localhost:8025" target="_blank" rel="noreferrer">Ver bandeja Mailpit</a>
+        </div>
+        <form id="email-template-form" class="form-grid">
+          <label>API Key
+            <input name="api_key" value="dev-api-key" required />
+          </label>
+          <label>Plantilla
+            <select name="template">
+              <option value="register-confirmation">Registro confirmado</option>
+              <option value="email-verification">Verificación de correo</option>
+              <option value="send-otp">OTP</option>
+              <option value="password-changed">Cambio contraseña</option>
+              <option value="discount-available">Descuento disponible</option>
+              <option value="birthday">Cumpleaños</option>
+              <option value="general">Promoción general</option>
+              <option value="welcome">Bienvenida</option>
+              <option value="account-suspended">Cuenta suspendida</option>
+              <option value="product-rejected">Producto rechazado</option>
+              <option value="policies-updated">Políticas actualizadas</option>
+              <option value="news">Newsletter</option>
+              <option value="new-sellers">Nuevos vendedores</option>
+              <option value="referral-invitation">Invitación referido</option>
+              <option value="referral-reward">Recompensa referido</option>
+            </select>
+          </label>
+          <label>Correo destino
+            <input name="correo_institu" type="email" value="jsebastian.henriquezb@udistrital.edu.co" required />
+          </label>
+          <label>Nombre
+            <input name="primer_nomb" value="Juan Sebastián" required />
+          </label>
+          <button class="btn primary wide" type="submit">Enviar plantilla</button>
+        </form>
+        <pre class="console" id="email-admin-output">Sin envío todavía.</pre>
+      </section>
+
+      <section class="card" id="admin-endpoints">
+        <div class="section-title">
+          <div>
+            <span class="eyebrow">Banco técnico</span>
+            <h2>Todos los endpoints detectados</h2>
+          </div>
+          <button class="btn secondary" id="btn-render-endpoints">Mostrar matriz</button>
+        </div>
+        <div id="endpoint-matrix" class="table-wrap empty-state">Presiona “Mostrar matriz”.</div>
+        <details class="mt-lg">
+          <summary>Ejecutor manual avanzado</summary>
+          <form id="manual-request-form" class="form-grid mt-md">
+            <label>Método
+              <select name="method"><option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option></select>
+            </label>
+            <label>URL completa o relativa
+              <input name="url" value="/api/report/reports/" required />
+            </label>
+            <label class="wide">Body JSON opcional
+              <textarea name="body" placeholder='{"status":"EN_REVISION"}'></textarea>
+            </label>
+            <button class="btn dark wide" type="submit">Ejecutar request</button>
+          </form>
+          <pre class="console" id="manual-output">Sin request todavía.</pre>
+        </details>
+      </section>
+    </section>
+  </main>
+
+  <footer class="footer">Panel administrador · C2C-UD</footer>
+  <script src="app.js"></script>
+</body>
+</html>

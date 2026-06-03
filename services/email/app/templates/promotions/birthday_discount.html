@@ -1,0 +1,13 @@
+<html>
+  <body>
+    <h1>¡Feliz cumpleaños, {{ primer_nomb }}{% if segundo_nom %} {{ segundo_nom }}{% endif %}!</h1>
+    <p>Tu cupón de cumpleaños <strong>#{{ id_cupon }}</strong> ya está listo para usar.</p>
+    {% if descripcion_prom %}
+      <p>{{ descripcion_prom }}</p>
+    {% else %}
+      <p>Disfruta de un descuento exclusivo por tu cumpleaños.</p>
+    {% endif %}
+    <p>Válido hasta: <strong>{{ fecha_fin_cupon }}</strong>.</p>
+    <p>Si no reconoces este correo, ignóralo.</p>
+  </body>
+</html>

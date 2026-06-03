@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>C2C-UD | Frontend unificado</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body data-page="home">
+  <header class="hero hero-home">
+    <nav class="topbar">
+      <div class="brand">
+        <span class="brand-mark">UD</span>
+        <div>
+          <strong>C2C-UD Marketplace</strong>
+          <small>Frontend unificado por servicios</small>
+        </div>
+      </div>
+      <div class="top-actions">
+        <a class="ghost" href="usuario.html">Vista usuario</a>
+        <a class="ghost" href="admin.html">Vista admin</a>
+      </div>
+    </nav>
+
+    <section class="hero-content">
+      <span class="eyebrow">Universidad Distrital Francisco José de Caldas</span>
+      <h1>Demo funcional para exponer los microservicios del marketplace.</h1>
+      <p>
+        Interfaz dividida por roles, formularios reales, casos de prueba guiados, mapa de sedes,
+        diagramas de estado y panel administrativo para validar reportes, cupones, geolocalización y correos.
+      </p>
+      <div class="hero-buttons">
+        <a class="btn primary" href="usuario.html">Entrar como usuario</a>
+        <a class="btn dark" href="admin.html">Entrar como administrador</a>
+      </div>
+    </section>
+  </header>
+
+  <main class="container">
+    <section class="grid cards-4" id="status-home">
+      <article class="card service-card" data-service-card="coupon">
+        <span class="service-icon">%</span>
+        <h3>Cupones</h3>
+        <p>Creación, consulta, activación, asignación y aplicación de descuentos.</p>
+        <span class="pill muted" id="status-coupon">Sin validar</span>
+      </article>
+      <article class="card service-card" data-service-card="email">
+        <span class="service-icon">@</span>
+        <h3>Correos</h3>
+        <p>Envío de plantillas transaccionales, promociones, moderación y newsletters.</p>
+        <span class="pill muted" id="status-email">Sin validar</span>
+      </article>
+      <article class="card service-card" data-service-card="geolocation">
+        <span class="service-icon">⌖</span>
+        <h3>Geolocalización</h3>
+        <p>Consulta de sedes, mapa visual, creación de puntos y eliminación por ID.</p>
+        <span class="pill muted" id="status-geolocation">Sin validar</span>
+      </article>
+      <article class="card service-card" data-service-card="report">
+        <span class="service-icon">!</span>
+        <h3>Reportes</h3>
+        <p>Radicación de reportes, seguimiento, filtros, actualización y reintentos.</p>
+        <span class="pill muted" id="status-report">Sin validar</span>
+      </article>
+    </section>
+
+    <section class="split mt-xl">
+      <article class="panel red-panel">
+        <h2>Flujo de usuario</h2>
+        <p>Permite simular lo que hace un usuario final del marketplace: reportar publicaciones, consultar su radicado, revisar sedes en mapa y aplicar cupones.</p>
+        <a class="btn light" href="usuario.html">Abrir usuario</a>
+      </article>
+      <article class="panel white-panel">
+        <h2>Flujo de administración</h2>
+        <p>Permite sustentar el backend: gestionar reportes, probar correos con Mailpit, crear cupones, listar usuarios y administrar sedes.</p>
+        <a class="btn primary" href="admin.html">Abrir admin</a>
+      </article>
+    </section>
+
+    <section class="card mt-xl">
+      <div class="section-title">
+        <div>
+          <span class="eyebrow">Casos incluidos</span>
+          <h2>Escenarios listos para exposición</h2>
+        </div>
+        <button class="btn secondary" id="btn-check-all">Validar servicios</button>
+      </div>
+      <div class="timeline">
+        <div><strong>1. Usuario reporta</strong><span>Formulario POST /api/v1/reports</span></div>
+        <div><strong>2. Admin revisa</strong><span>Lista, filtra y actualiza estados</span></div>
+        <div><strong>3. Sedes en mapa</strong><span>Markers con datos reales del servicio</span></div>
+        <div><strong>4. Cupones</strong><span>Asignación y aplicación sobre precio</span></div>
+        <div><strong>5. Email</strong><span>Plantillas con API Key y Mailpit</span></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">C2C-UD · Demo académica · Colores institucionales rojo y blanco</footer>
+  <script src="app.js"></script>
+</body>
+</html>

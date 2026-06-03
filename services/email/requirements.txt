@@ -1,5 +1,8 @@
 fastapi
 uvicorn[standard]
 pydantic-settings
+python-dotenv
+Jinja2
+email-validator
 pytest
 httpx

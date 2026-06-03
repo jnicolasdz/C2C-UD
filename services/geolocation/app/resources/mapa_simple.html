@@ -1,102 +1,167 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Mapa</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mapa de sedes UD</title>
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
+    :root {
+      --ud-red: #b3132b;
+      --ud-red-dark: #7b0d1d;
+      --line: #e7e7ec;
+      --ink: #1f1f29;
+      --muted: #667085;
+    }
+
+    * { box-sizing: border-box; }
+
     html, body {
       margin: 0;
-      height: 100%;
+      min-height: 100%;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f7f7fa;
+      color: var(--ink);
+    }
+
+    .page {
+      width: min(1100px, calc(100% - 32px));
+      margin: 24px auto;
+      display: grid;
+      gap: 16px;
+    }
+
+    .controls, .map-card {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 14px 32px rgba(16, 24, 40, .08);
+      padding: 16px;
     }
 
     .controls {
-      padding: 10px;
+      display: flex;
+      gap: 12px;
+      align-items: end;
+      flex-wrap: wrap;
     }
 
+    label {
+      display: grid;
+      gap: 6px;
+      font-weight: 700;
+      color: #344054;
+    }
+
+    input {
+      min-width: 240px;
+      border: 1px solid #d0d5dd;
+      border-radius: 12px;
+      padding: 11px 12px;
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 18px;
+      background: var(--ud-red);
+      color: white;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    button:hover { background: var(--ud-red-dark); }
+
     #map {
-      width: 80%;
-      height: 500px;
-      margin: 10px;
+      width: 100%;
+      height: 540px;
+      min-height: 420px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+      background: #eef2f6;
+    }
+
+    .info {
+      color: var(--muted);
+      margin: 0;
+      font-size: .92rem;
+    }
+
+    @media (max-width: 640px) {
+      .page { width: min(100% - 20px, 1100px); }
+      #map { height: 360px; min-height: 360px; }
+      input, button { width: 100%; }
     }
   </style>
 </head>
 <body>
+  <main class="page">
+    <section class="controls">
+      <label>
+        ID de la sede
+        <input type="number" id="locationId" value="5" placeholder="Ingrese ID de la sede" />
+      </label>
+      <button onclick="buscarUbicacion()">Buscar y centrar</button>
+      <p class="info">Endpoint: GET /api/v1/geolocation/id/{id}</p>
+    </section>
 
-  <div class="controls">
-    <input
-      type="number"
-      id="locationId"
-      placeholder="Ingrese ID de la sede"
-    />
-
-    <button onclick="buscarUbicacion()">
-      Buscar
-    </button>
-  </div>
-
-  <div id="map"></div>
+    <section class="map-card">
+      <div id="map"></div>
+    </section>
+  </main>
 
   <script>
+    const map = L.map('map', {
+      scrollWheelZoom: true,
+      zoomControl: true
+    }).setView([4.579879582980126, -74.15765447275686], 16);
 
-    const map = L.map('map').setView(
-      [4.579879582980126, -74.15765447275686],
-      16
-    );
-
-    L.tileLayer(
-      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      {
-        attribution:
-          '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-      }
-    ).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19
+    }).addTo(map);
 
     let marker = null;
 
-    async function buscarUbicacion() {
+    function redimensionarMapa() {
+      requestAnimationFrame(() => map.invalidateSize({ pan: false }));
+      setTimeout(() => map.invalidateSize({ pan: false }), 150);
+    }
 
-      const id = document.getElementById("locationId").value;
+    async function buscarUbicacion() {
+      const id = document.getElementById('locationId').value;
 
       if (!id) {
-        alert("Ingrese un ID");
+        alert('Ingrese un ID');
         return;
       }
 
       try {
-
-        // Cambia esta URL por tu endpoint real
-        const response = await fetch(
-          `http://localhost:8003/api/v1/geolocation/id/${id}`
-        );
+        const response = await fetch(`http://localhost:8003/api/v1/geolocation/id/${encodeURIComponent(id)}`);
 
         if (!response.ok) {
-          throw new Error("Ubicación no encontrada");
+          throw new Error('Ubicación no encontrada');
         }
 
         const data = await response.json();
 
-        console.log(data);
+        if (data.error) {
+          throw new Error(data.error);
+        }
 
-        /*
-          Ajusta estos nombres según tu JSON real.
+        const lat = Number(data.latitude);
+        const lon = Number(data.longitude);
 
-          Ejemplo esperado:
-          {
-            "id": 1,
-            "name": "Sede Bosa",
-            "latitude": 4.579879,
-            "longitude": -74.157654
-          }
-        */
+        if (Number.isNaN(lat) || Number.isNaN(lon)) {
+          throw new Error('La ubicación no tiene coordenadas válidas');
+        }
 
-        const lat = data.latitude;
-        const lon = data.longitude;
-
+        redimensionarMapa();
         map.setView([lat, lon], 16);
 
         if (marker) {
@@ -105,21 +170,20 @@
 
         marker = L.marker([lat, lon])
           .addTo(map)
-          .bindTooltip(
-            data.name || `Ubicación ${id}`,
-            {
-              permanent: true,
-              direction: "top"
-            }
-          );
-
+          .bindTooltip(data.name || `Ubicación ${id}`, {
+            permanent: true,
+            direction: 'top'
+          })
+          .bindPopup(`<strong>${data.name || `Ubicación ${id}`}</strong><br>${data.address || ''}`)
+          .openPopup();
       } catch (error) {
         alert(error.message);
         console.error(error);
       }
     }
 
+    window.addEventListener('load', redimensionarMapa);
+    window.addEventListener('resize', redimensionarMapa);
   </script>
-
 </body>
 </html>

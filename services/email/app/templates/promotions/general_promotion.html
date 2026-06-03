@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Promoción General</title>
+  </head>
+  <body>
+    <p>Hola {{ primer_nomb }},</p>
+    <p>Te informamos sobre una nueva promoción disponible:</p>
+    <ul>
+      <li>Tipo de promoción: <strong>{{ tipo_prom }}</strong></li>
+      <li>ID de promoción: <strong>{{ id_prom }}</strong></li>
+      {% if fecha_fin_prom %}
+      <li>Válida hasta: <strong>{{ fecha_fin_prom }}</strong></li>
+      {% endif %}
+    </ul>
+    <p>{{ descripcion_prom }}</p>
+    <p>Gracias por ser parte de nuestra comunidad.</p>
+  </body>
+</html>
