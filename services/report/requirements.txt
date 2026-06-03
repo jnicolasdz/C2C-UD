@@ -5,3 +5,6 @@ psycopg2-binary
 pydantic-settings
 email-validator
 python-dotenv
+pytest
+pytest-cov
+httpx
