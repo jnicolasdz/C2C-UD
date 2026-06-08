@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="es">
+  <body>
+    <h1>Hola {{ display_name }}</h1>
+    <p>Este es tu código OTP para autenticación de doble factor:</p>
+    <h2>{{ otp_code }}</h2>
+    <p>Este código vence en {{ expiration_minutes }} minutos.</p>
+    <p>Correo institucional: {{ correo_institu }}</p>
+    <p>Identificador de usuario: {{ codigo_user }}</p>
+    {% if device_hint %}
+    <p>Dispositivo detectado: {{ device_hint }}</p>
+    {% endif %}
+    <p>No compartas este código con nadie.</p>
+  </body>
+</html>

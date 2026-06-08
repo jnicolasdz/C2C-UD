@@ -1,0 +1,61 @@
+@baseUrl = http://localhost:8004/api/v1/reports
+
+### Crear reporte: retorna success, send_status y retry_available
+POST {{baseUrl}}/
+Content-Type: application/json
+
+{
+  "user_id": "20221020058",
+  "user_name": "Juan Sebastián Henríquez",
+  "user_email": "usuario.prueba@correo.com",
+  "report_type": "Comportamiento inapropiado",
+  "subject": "Reporte sobre publicación inapropiada",
+  "description": "El usuario encontró una publicación con contenido que incumple las reglas del marketplace."
+}
+
+### Listar reportes
+GET {{baseUrl}}/
+
+### Filtrar por usuario emisor
+GET {{baseUrl}}/?user_email=usuario.prueba@correo.com
+
+### Filtrar por estado técnico de envío
+GET {{baseUrl}}/?send_status=FALLIDO
+
+### Listar reportes fallidos
+GET {{baseUrl}}/failed
+
+### Listar reportes pendientes
+GET {{baseUrl}}/pending
+
+### Consultar por ID
+GET {{baseUrl}}/1
+
+### Consultar por radicado
+GET {{baseUrl}}/tracking/RPT-REEMPLAZAR
+
+### Reintentar envío de reporte fallido o pendiente conservando ID
+POST {{baseUrl}}/1/retry
+
+### Actualizar estado de gestión
+PUT {{baseUrl}}/1
+Content-Type: application/json
+
+{
+  "status": "EN_REVISION"
+}
+
+### Eliminación lógica
+DELETE {{baseUrl}}/1
+
+### Actualizar estado como administrador y notificar al usuario
+PUT http://localhost:8004/api/v1/reports/1
+Content-Type: application/json
+
+{
+  "status": "RESUELTO"
+}
+
+### Ejecutar reintento de un reporte fallido o pendiente
+POST http://localhost:8004/api/v1/reports/1/retry
+Content-Type: application/json

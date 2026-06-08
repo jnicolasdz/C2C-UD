@@ -1,0 +1,18 @@
+<html>
+  <body>
+    <h1>Notificación de suspensión de cuenta</h1>
+    <p>Hola {{ primer_nomb }},</p>
+    <p>Tu cuenta ha sido suspendida por el siguiente motivo:</p>
+    <p><strong>{{ motivo_suspension }}</strong></p>
+    {% if fecha_suspension %}
+      <p><strong>Fecha de suspensión:</strong> {{ fecha_suspension }}</p>
+    {% endif %}
+    <p><strong>Contrato de administración:</strong> {{ numero_contrato }}</p>
+    {% if instrucciones_apelacion %}
+      <p>{{ instrucciones_apelacion }}</p>
+    {% else %}
+      <p>Si deseas apelar esta decisión, por favor contacta al soporte de C2C a través de tu canal habitual.</p>
+    {% endif %}
+    <p>Gracias por tu comprensión.</p>
+  </body>
+</html>

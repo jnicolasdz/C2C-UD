@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Actualización de políticas</title>
+</head>
+<body>
+  <h1>Actualización de políticas de C2C</h1>
+  <p>Hola {{ primer_nomb }},</p>
+  <p>Te informamos que se ha publicado una nueva versión de las políticas de la plataforma.</p>
+  <ul>
+    <li><strong>Documento:</strong> {{ tipo_doc }}</li>
+    <li><strong>ID del documento:</strong> {{ id_doc }}</li>
+    <li><strong>Versión:</strong> {{ version_nueva }}</li>
+    {% if fecha_vigencia %}
+    <li><strong>Fecha de vigencia:</strong> {{ fecha_vigencia }}</li>
+    {% endif %}
+  </ul>
+  <p>Resumen de los cambios:</p>
+  <blockquote>{{ resumen_cambios }}</blockquote>
+  {% if enlace_documento %}
+  <p>Puedes revisar el documento completo en el siguiente enlace:</p>
+  <p><a href="{{ enlace_documento }}">{{ enlace_documento }}</a></p>
+  {% endif %}
+  <p>Si tienes preguntas, contacta al administrador usando el contrato <strong>{{ numero_contrato }}</strong>.</p>
+  <p>Gracias por mantener tu cuenta al día con las políticas de C2C.</p>
+</body>
+</html>

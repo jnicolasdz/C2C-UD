@@ -1,0 +1,22 @@
+<html>
+  <body>
+    <h1>¡{{ referrer_nombre }} te invita a C2C!</h1>
+    <p>Hola,</p>
+    <p>{{ referrer_nombre }} cree que C2C es una plataforma excelente para ti y quiere compartir esta oportunidad.</p>
+    {% if mensaje_personalizado %}
+      <p><em>"{{ mensaje_personalizado }}"</em></p>
+    {% endif %}
+    <p><strong>¿Qué es C2C?</strong></p>
+    <p>C2C es la plataforma universitaria donde puedes comprar, vender y conectar con otros estudiantes. Es la forma más fácil y segura de hacer transacciones dentro de tu comunidad académica.</p>
+    <p><strong>Tu oportunidad de bienvenida</strong></p>
+    <p>Al registrarte con el código de referido <strong>{{ referral_code }}</strong>, obtendrás un cupón de bienvenida especial para tu primera compra.</p>
+    <p><strong>¿Cómo registrarte?</strong></p>
+    <p>Haz clic en el siguiente enlace para unirte a C2C usando la invitación de {{ referrer_nombre }}:</p>
+    <p><a href="{{ referral_link }}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Registrarme ahora</a></p>
+    <p>O copia y pega este enlace en tu navegador:</p>
+    <p><code>{{ referral_link }}</code></p>
+    <p><strong>Código de referido (también lo necesitarás si te registras manualmente):</strong> {{ referral_code }}</p>
+    <p>¡Bienvenido a la comunidad C2C!</p>
+    <p>Si tienes preguntas, no dudes en contactarnos.</p>
+  </body>
+</html>

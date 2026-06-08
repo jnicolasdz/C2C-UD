@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ titulo_boletin or 'Nuevos vendedores en C2C' }}</title>
+  </head>
+  <body>
+    <p>Hola {{ primer_nomb }},</p>
+    <h1>{{ titulo_boletin or 'Nuevos vendedores destacados' }}</h1>
+
+    <p>A continuación encontrarás los nuevos vendedores registrados:</p>
+    <ul>
+      {% for seller in new_sellers %}
+      <li>
+        <strong>{{ seller.nombre_vendedor }}</strong> — Categoría: {{ seller.nombre_categoria }} — Calificación: {{ seller.calificacion }}
+      </li>
+      {% endfor %}
+    </ul>
+
+    {% if fecha_publicacion %}
+    <p>Fecha de publicación: {{ fecha_publicacion }}</p>
+    {% endif %}
+
+    <hr />
+    <p>Atentamente,<br/>Equipo C2C</p>
+  </body>
+</html>

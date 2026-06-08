@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Publicación rechazada</title>
+</head>
+<body>
+  <h1>Tu publicación ha sido rechazada</h1>
+  <p>Hola {{ primer_nomb }},</p>
+  <p>Hemos revisado tu publicación <strong>{{ nombre_pub }}</strong> (ID: {{ id_pub }}).</p>
+  <p>Motivo del rechazo:</p>
+  <blockquote>{{ motivo_rechazo }}</blockquote>
+  {% if recomendaciones %}
+  <p>Recomendaciones para volver a publicarla:</p>
+  <blockquote>{{ recomendaciones }}</blockquote>
+  {% else %}
+  <p>No se proporcionaron recomendaciones específicas en este momento.</p>
+  {% endif %}
+  <p>Si tienes dudas, puedes comunicarte con el administrador usando el contrato <strong>{{ numero_contrato }}</strong>.</p>
+  <p>Gracias por contribuir a C2C.</p>
+</body>
+</html>
